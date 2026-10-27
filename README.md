@@ -1,4 +1,4 @@
 # 207-course-project
 A better timetable builder!
 
-Don't push to main (it's automatically enforced, you may get error).
+Don't push to main, work on new branch, push the branch, create pull request.
