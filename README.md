@@ -1,11 +1,28 @@
-# 207-course-project
-A better timetable builder!
+# U of T Timetable Builder
+
+## Team Information
+
+### Team Members
+- Matthew Chen
+- Efe Atalay
+- Jingyan Lin
+- Vincent He
+- Leon Ren
+
+## Project Description
+
+### Domain
+Education and student productivity.
+
+### Description
+Our project is a Java Swing timetable builder for U of T students. The planned app will let students search for courses, add sections to a weekly timetable, see which meetings overlap, and save and reopen their plans.
 
 Work on a branch and open a pull request for review instead of pushing directly
 to `main`.
 
-## First user story
+## User Stories
 
+### 1. Find course sections (Matthew) — Implemented
 As a student, I want to search by course code and see the matching offerings,
 their sections, and their meeting times, so I can choose sections that fit my
 schedule.
@@ -23,6 +40,59 @@ the invariant and complexity. The source JSON does not need to be sorted.
 
 See [the architecture plan](docs/architecture.md) for the agreed responsibilities,
 interfaces, implementation order, and coding conventions.
+
+### 2. something (Jingyan) — In Progress
+
+### 3. something () — In Progress
+
+### 4. something () — In Progress
+
+### 5. something () — In Progress
+
+## Use Cases
+
+### Find course sections
+
+- **Primary actor:** Student.
+- **Precondition:** The course catalogue has loaded.
+- **Trigger:** The student selects a suggested course code or submits a full code.
+- **Success outcome:** The student sees the matching offerings and can inspect
+  their sections and meeting times.
+
+**Main success scenario**
+
+1. The student enters a course code or starts typing its prefix.
+2. The app displays matching course-code suggestions as the student types.
+3. The student selects a suggestion or submits a full course code.
+4. The app displays the matching offerings by term and campus, including their
+   sections, known meeting times, and any cancellation or TBA information.
+
+**Extensions**
+
+- **Step 3 — Blank input:** The app asks the student to enter a course code.
+- **Step 4 — No matching offerings:** The app displays a no-results message.
+- **Step 4 — Catalogue access fails:** The app displays a search error.
+- 
+## Minimum Viable Product (MVP)
+| Team member | MVP use case | Status |
+|---|---|---|
+| Matthew | Find course sections | Implemented |
+(add more later)
+
+## Entities
+
+| Entity | Main fields | Relevant behavior |
+|---|---|---|
+| `CourseOffering` | Offering ID, course code, title, campus, term, sections | Provides the sections for a particular offering. |
+| `Section` | Section identifier, teaching type, status, meeting times, linked sections | Provides the meeting times and links for a section. |
+| `MeetingTime` | Day, start time, end time, academic session, recurrence, location | Represents when and where a meeting takes place. |
+| `Timetable` (proposed) | Academic term and selected sections | Records section selections for a weekly plan. |
+
+## API Usage
+(add notes here)
+
+## Design Diagrams
+(add notes here)
 
 ## Catalogue data
 
