@@ -1,0 +1,64 @@
+[
+  {
+    "id": "sample-csc108-fall", "code": "CSC108H1", "name": "Sample Introduction to Computer Programming",
+    "campus": "St. George", "sectionCode": "F", "sessions": ["20269"], "cancelInd": "N",
+    "sections": [
+      {
+        "name": "LEC0101", "teachMethod": "LEC", "cancelInd": "N", "tbaInd": "N",
+        "meetingTimes": [
+          {
+            "start": {"day": 1, "millisofday": 32400000}, "end": {"day": 1, "millisofday": 36000000},
+            "sessionCode": "20269", "repetition": "WEEKLY", "repetitionTime": "ONCE_A_WEEK",
+            "building": {"buildingCode": "BA", "buildingRoomNumber": "1200", "buildingRoomSuffix": ""}
+          },
+          {
+            "start": {"day": 3, "millisofday": 32400000}, "end": {"day": 3, "millisofday": 36000000},
+            "sessionCode": "20269", "repetition": "WEEKLY", "repetitionTime": "ONCE_A_WEEK", "building": null
+          }
+        ]
+      },
+      {
+        "name": "TUT0101", "teachMethod": "TUT", "cancelInd": "N", "tbaInd": "N",
+        "linkedMeetingSections": [{"teachMethod": "LEC", "sectionNumber": "0101"}],
+        "meetingTimes": [
+          {
+            "start": {"day": 5, "millisofday": 39600000}, "end": {"day": 5, "millisofday": 43200000},
+            "sessionCode": "20269", "repetition": "BI_WEEKLY", "repetitionTime": "FIRST_AND_THIRD_WEEK"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "sample-csc108-winter", "code": "CSC108H1", "name": "Sample Introduction to Computer Programming",
+    "campus": "St. George", "sectionCode": "S", "sessions": ["20271"], "cancelInd": "N",
+    "sections": [
+      {"name": "LEC0201", "teachMethod": "LEC", "cancelInd": "N", "tbaInd": "Y", "meetingTimes": [], "linkedMeetingSections": null},
+      {
+        "name": "LEC9901", "teachMethod": "LEC", "cancelInd": "Y", "tbaInd": "N",
+        "meetingTimes": [
+          {
+            "start": {"day": 2, "millisofday": 50400000}, "end": {"day": 2, "millisofday": 54000000},
+            "sessionCode": "20271", "repetition": "WEEKLY", "repetitionTime": "ONCE_A_WEEK"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "sample-csc207-fall", "code": "CSC207H1", "name": "Sample Software Design",
+    "campus": "St. George", "sectionCode": "F", "sessions": ["20269"], "cancelInd": "Y",
+    "sections": [
+      {
+        "name": "PRA0101", "teachMethod": "PRA", "cancelInd": "N", "tbaInd": "N",
+        "meetingTimes": [
+          {
+            "start": {"day": 4, "millisofday": 46800000}, "end": {"day": 4, "millisofday": 54000000},
+            "sessionCode": "20269", "repetition": "MANUAL", "repetitionTime": "MANUAL"
+          }
+        ]
+      },
+      {"name": "TUT0201", "teachMethod": "TUT", "meetingTimes": null}
+    ]
+  }
+]
