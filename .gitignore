@@ -1,0 +1,7 @@
+target/
+.mvn/repository/
+.mvn/user-home/
+.idea/
+*.iml
+.DS_Store
+courses.json
