@@ -41,7 +41,9 @@ the invariant and complexity. The source JSON does not need to be sorted.
 See [the architecture plan](docs/architecture.md) for the agreed responsibilities,
 interfaces, implementation order, and coding conventions.
 
-### 2. something (Jingyan) — In Progress
+### 2. Build a weekly timetable (Jingyan) — In Progress
+As a student, I want to add and remove specific lecture, tutorial, and
+practical sections so I can see when my classes meet each week.
 
 ### 3. something () — In Progress
 
@@ -72,11 +74,32 @@ interfaces, implementation order, and coding conventions.
 - **Step 3 — Blank input:** The app asks the student to enter a course code.
 - **Step 4 — No matching offerings:** The app displays a no-results message.
 - **Step 4 — Catalogue access fails:** The app displays a search error.
-- 
+
+### Add a section to the weekly timetable
+
+- **Primary actor:** Student.
+- **Precondition:** The student is viewing the sections for a course offering.
+- **Trigger:** The student selects a section and clicks **Add to Timetable**.
+- **Success outcome:** The section is selected and all its known meeting times
+  appear in the weekly timetable.
+
+**Main success scenario**
+
+1. The student chooses a specific section from the search results.
+2. The student adds the section to their timetable.
+3. The app displays each of the section's scheduled meetings on the weekly grid.
+
+**Extensions**
+
+- If the section is already selected, the app keeps one copy.
+- If a meeting time is TBA, the app shows the section as selected with a
+  **Time TBA** label and leaves it off the timed grid.
+
 ## Minimum Viable Product (MVP)
 | Team member | MVP use case | Status |
 |---|---|---|
 | Matthew | Find course sections | Implemented |
+| Jingyan | Add and remove sections from the weekly timetable | In progress |
 (add more later)
 
 ## Entities
