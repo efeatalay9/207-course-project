@@ -94,11 +94,42 @@ As a student, I want to add a course section and see its scheduled meetings so I
 - If a meeting time is TBA, the app shows the section as selected with a
   **Time TBA** label and leaves it off the timed grid.
 
+### Review my weekly timetable
+
+- **Primary actor:** Student.
+- **Trigger:** The student opens the weekly timetable.
+- **Success outcome:** Each scheduled meeting for the displayed academic session appears on the correct day and at the correct time.
+
+**Main success scenario**
+
+1. The student opens the weekly timetable.
+2. The app displays the meetings for the selected sections on the weekly grid.
+
+**Extensions**
+
+- If there are no selected sections, the app shows an empty grid.
+- If a selected section has no knokwn meeting times, the app lists it separately as **Time TBA**
+
+### Remove a section from my timetable
+
+- **Primary actor:** Student.
+- **Precondition:** The timetable contains at least one selected section.
+- **Trigger:** The student chooses **Remove** for a selected section.
+- **Success outcome:** The section and all of its meeting blocks disappear from the timetable.
+
+**Main success scenario**
+
+1. The student selects a section they previously added.
+2. The student chooses **Remove**.
+3. The app removes the section and refreshes the weekly grid.
+
 ## Minimum Viable Product (MVP)
 | Team member | MVP use case | Status |
 |---|---|---|
 | Matthew | Find course sections | Implemented |
 | Jingyan | Add and remove sections from the weekly timetable | In progress |
+| Vincent | View the weekly grid and remove a section | In progress |
+| Person 4| Check timetable conflicts | Planned |
 (add more later)
 
 ## Entities
