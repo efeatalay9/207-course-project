@@ -4,9 +4,13 @@ import interfaceadapter.searchcourses.SearchCoursesController;
 import interfaceadapter.searchcourses.SearchCoursesViewModel;
 import interfaceadapter.suggestcoursecodes.SuggestCourseCodesController;
 import interfaceadapter.suggestcoursecodes.SuggestCourseCodesViewModel;
+import interfaceadapter.searchcourses.SearchCoursesViewModel.SectionChoice;
+import interfaceadapter.addsection.AddSectionController;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.Font;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -16,25 +20,34 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
+import javax.swing.DefaultListModel;
+import javax.swing.JList;
+import javax.swing.JSplitPane;
+import javax.swing.ListSelectionModel;
 
 // A minimal desktop tester. It renders display state and delegates all search behaviour.
 public final class SearchView {
     private final SearchCoursesController controller;
+    private final AddSectionController addSectionController;
     private final SearchCoursesViewModel viewModel;
     private final CourseCodeDropdown dropdown;
     private final JFrame frame = new JFrame("Course search — CSC207");
     private final JTextField codeField = new JTextField(22);
     private final JLabel heading = new JLabel();
     private final JTextArea results = new JTextArea();
+    private final JTextArea timetableText = new JTextArea(6, 30);
+    private final DefaultListModel<SectionChoice> sectionChoices = new DefaultListModel<>();
+    private final JList<SectionChoice> sectionList = new JList<>(sectionChoices);
 
     // Construct on Swing's event thread; catalogue loading has already finished in Main.
     public SearchView(SearchCoursesController controller, SearchCoursesViewModel viewModel,
                       SuggestCourseCodesController suggestions, SuggestCourseCodesViewModel suggestionsModel,
-                      String sourceDescription) {
+                      String sourceDescription, AddSectionController addSectionController) {
         if (!SwingUtilities.isEventDispatchThread()) {
             throw new IllegalStateException("Create the search view on Swing's event thread.");
         }
         this.controller = controller;
+        this.addSectionController = addSectionController;
         this.viewModel = viewModel;
         dropdown = new CourseCodeDropdown(codeField, suggestions, suggestionsModel, this::search);
         JPanel content = new JPanel(new BorderLayout(12, 12));
@@ -97,8 +110,50 @@ public final class SearchView {
         results.setWrapStyleWord(true);
         results.setMargin(new java.awt.Insets(12, 12, 12, 12));
         results.getAccessibleContext().setAccessibleName("Course search results");
-        panel.add(new JScrollPane(results), BorderLayout.CENTER);
+        sectionList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+
+        JScrollPane sectionScroll = new JScrollPane(sectionList);
+
+        JButton addButton = new JButton("Add to Timetable");
+        addButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent event) {
+                addSelectedSection();
+            }
+        });
+
+        JPanel sectionsPanel = new JPanel(new BorderLayout(8, 8));
+        sectionsPanel.setBorder(BorderFactory.createTitledBorder("Available sections"));
+        sectionsPanel.add(sectionScroll, BorderLayout.CENTER);
+        sectionsPanel.add(addButton, BorderLayout.SOUTH);
+
+        JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, new JScrollPane(results), sectionsPanel);
+        split.setResizeWeight(0.65);
+        panel.add(split, BorderLayout.CENTER);
+        timetableText.setEditable(false);
+        JScrollPane timetableScroll = new JScrollPane(timetableText);
+        timetableScroll.setBorder(BorderFactory.createTitledBorder("My Timetable"));
+        panel.add(timetableScroll, BorderLayout.SOUTH);
+
         return panel;
+    }
+
+    private void addSelectedSection() {
+        SectionChoice selected = sectionList.getSelectedValue();
+
+        if (selected == null) {
+            return;
+        }
+
+        boolean added = addSectionController.addSection(selected.offeringId(), selected.sectionName());
+
+        if (added) {
+            timetableText.append(selected.toString() + "\n");
+            timetableText.append(selected.meetingDetails());
+            timetableText.append("\n");
+        } else {
+            System.out.println("Already in timetable: " + selected);
+        }
     }
 
     // In-memory lookup is small and synchronous; a remote adapter would need a UI worker.
@@ -114,5 +169,10 @@ public final class SearchView {
         heading.setText(viewModel.state().heading());
         results.setText(viewModel.state().details());
         results.setCaretPosition(0);
+        sectionChoices.clear();
+
+        for (SectionChoice choice : viewModel.state().sectionChoices()) {
+            sectionChoices.addElement(choice);
+        }
     }
 }
