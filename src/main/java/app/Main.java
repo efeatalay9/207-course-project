@@ -2,10 +2,16 @@ package app;
 
 import dataaccess.catalog.CatalogLoadException;
 import dataaccess.catalog.InMemoryCourseCatalog;
+import dataaccess.catalog.InMemoryOfferingLookup;
 import dataaccess.catalog.JsonCatalogLoader;
 import domain.CourseOffering;
 import domain.Timetable;
 import interfaceadapter.addsection.AddSectionController;
+import interfaceadapter.removesection.RemoveSectionController;
+import interfaceadapter.removesection.RemoveSectionPresenter;
+import interfaceadapter.viewtimetable.TimetableViewModel;
+import interfaceadapter.viewtimetable.ViewTimetableController;
+import interfaceadapter.viewtimetable.ViewTimetablePresenter;
 import interfaceadapter.searchcourses.SearchCoursesController;
 import interfaceadapter.searchcourses.SearchCoursesPresenter;
 import interfaceadapter.searchcourses.SearchCoursesViewModel;
@@ -14,7 +20,10 @@ import interfaceadapter.suggestcoursecodes.SuggestCourseCodesPresenter;
 import interfaceadapter.suggestcoursecodes.SuggestCourseCodesViewModel;
 import view.ConsoleSearchView;
 import view.SearchView;
+import view.WeeklyTimetablePanel;
 import usecase.addsection.AddSectionInteractor;
+import usecase.removesection.RemoveSectionInteractor;
+import usecase.viewtimetable.ViewTimetableInteractor;
 import java.awt.GraphicsEnvironment;
 import java.io.IOException;
 import java.io.InputStream;
@@ -89,8 +98,18 @@ public final class Main {
                 Timetable timetable = new Timetable();
                 AddSectionInteractor addSectionInteractor = new AddSectionInteractor(timetable);
                 AddSectionController addSectionController = new AddSectionController(addSectionInteractor);
+                // View and remove share the timetable with add, and one view model for the grid panel.
+                TimetableViewModel timetableModel = new TimetableViewModel();
+                ViewTimetableController viewTimetableController = new ViewTimetableController(
+                        new ViewTimetableInteractor(timetable, new InMemoryOfferingLookup(offerings),
+                                new ViewTimetablePresenter(timetableModel)));
+                RemoveSectionController removeSectionController = new RemoveSectionController(
+                        new RemoveSectionInteractor(timetable, new RemoveSectionPresenter(timetableModel)));
                 SwingUtilities.invokeLater(() -> {
-                    SearchView desktopView = new SearchView(controller, viewModel, suggestions, suggestionsModel, source, addSectionController);
+                    WeeklyTimetablePanel timetablePanel = new WeeklyTimetablePanel(
+                            viewTimetableController, removeSectionController, timetableModel);
+                    SearchView desktopView = new SearchView(controller, viewModel, suggestions, suggestionsModel,
+                            source, addSectionController, timetablePanel);
                     desktopView.show();
                     output.println("Desktop search window opened. Type CSC to try the course-code dropdown.");
                     output.flush();
