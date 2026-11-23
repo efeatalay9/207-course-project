@@ -44,9 +44,11 @@ interfaces, implementation order, and coding conventions.
 ### 2. Add a section and view its meeting times (Jingyan) — Implemented
 As a student, I want to add a course section and see its scheduled meetings so I can keep track of the sections I’ve chosen.
 
-### 3. something () — In Progress
+### 3. View and edit my weekly timetable (Vincent) - In progress
+As a student, I want to see my selected sections on a weekly grid and remove sections I no longer want so I can adjust my schedule.
 
-### 4. something () — In Progress
+### 4. Check timetable conflicts (Planned)
+As a student, I want to see which of my selected meetings overlap and when they overlap so I can decide which sections to change.
 
 ### 5. something () — In Progress
 
@@ -129,7 +131,7 @@ As a student, I want to add a course section and see its scheduled meetings so I
 | Matthew | Find course sections | Implemented |
 | Jingyan | Add and remove sections from the weekly timetable | In progress |
 | Vincent | View the weekly grid and remove a section | In progress |
-| Person 4| Check timetable conflicts | Planned |
+| Person 4 | Check timetable conflicts | Planned |
 (add more later)
 
 ## Entities
