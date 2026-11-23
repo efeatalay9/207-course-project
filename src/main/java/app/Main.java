@@ -4,6 +4,8 @@ import dataaccess.catalog.CatalogLoadException;
 import dataaccess.catalog.InMemoryCourseCatalog;
 import dataaccess.catalog.JsonCatalogLoader;
 import domain.CourseOffering;
+import domain.Timetable;
+import interfaceadapter.addsection.AddSectionController;
 import interfaceadapter.searchcourses.SearchCoursesController;
 import interfaceadapter.searchcourses.SearchCoursesPresenter;
 import interfaceadapter.searchcourses.SearchCoursesViewModel;
@@ -12,6 +14,7 @@ import interfaceadapter.suggestcoursecodes.SuggestCourseCodesPresenter;
 import interfaceadapter.suggestcoursecodes.SuggestCourseCodesViewModel;
 import view.ConsoleSearchView;
 import view.SearchView;
+import usecase.addsection.AddSectionInteractor;
 import java.awt.GraphicsEnvironment;
 import java.io.IOException;
 import java.io.InputStream;
@@ -83,8 +86,11 @@ public final class Main {
                 new ConsoleSearchView(controller, viewModel, input, output).run();
             } else {
                 SuggestCourseCodesController suggestions = new SuggestCourseCodesController(application.suggestions());
+                Timetable timetable = new Timetable();
+                AddSectionInteractor addSectionInteractor = new AddSectionInteractor(timetable);
+                AddSectionController addSectionController = new AddSectionController(addSectionInteractor);
                 SwingUtilities.invokeLater(() -> {
-                    SearchView desktopView = new SearchView(controller, viewModel, suggestions, suggestionsModel, source);
+                    SearchView desktopView = new SearchView(controller, viewModel, suggestions, suggestionsModel, source, addSectionController);
                     desktopView.show();
                     output.println("Desktop search window opened. Type CSC to try the course-code dropdown.");
                     output.flush();

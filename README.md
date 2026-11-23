@@ -41,9 +41,8 @@ the invariant and complexity. The source JSON does not need to be sorted.
 See [the architecture plan](docs/architecture.md) for the agreed responsibilities,
 interfaces, implementation order, and coding conventions.
 
-### 2. Build a weekly timetable (Jingyan) — In Progress
-As a student, I want to add and remove specific lecture, tutorial, and
-practical sections so I can see when my classes meet each week.
+### 2. Add a section and view its meeting times (Jingyan) — Implemented
+As a student, I want to add a course section and see its scheduled meetings so I can keep track of the sections I’ve chosen.
 
 ### 3. something () — In Progress
 
@@ -87,7 +86,7 @@ practical sections so I can see when my classes meet each week.
 
 1. The student chooses a specific section from the search results.
 2. The student adds the section to their timetable.
-3. The app displays each of the section's scheduled meetings on the weekly grid.
+3. The app displays each of the section's scheduled meetings on the "My Timetable panel."
 
 **Extensions**
 

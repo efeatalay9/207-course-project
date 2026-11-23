@@ -11,6 +11,9 @@ import java.time.format.TextStyle;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import interfaceadapter.searchcourses.SearchCoursesViewModel.SectionChoice;
+import java.util.ArrayList;
+import java.util.List;
 
 // Formats use-case responses without depending on a specific UI toolkit.
 public final class SearchCoursesPresenter implements SearchCoursesOutputBoundary {
@@ -43,8 +46,47 @@ public final class SearchCoursesPresenter implements SearchCoursesOutputBoundary
         }
         String details = response.offerings().stream().map(this::offering)
                 .collect(Collectors.joining("\n\n"));
+
+        List<SectionChoice> choices = new ArrayList<>();
+
+        for (OfferingResult offering : response.offerings()) {
+            List<String> formattedSessions = new ArrayList<>();
+
+            for (String code : offering.sessions()) {
+                formattedSessions.add(session(code));
+            }
+
+            String sessions = String.join(", ", formattedSessions);
+
+            for (OfferingResult.SectionResult section : offering.sections()) {
+                String label = offering.code() + " · " + offering.campus() + " · " + sessions + " · " + section.name();
+
+                StringBuilder meetingDetails = new StringBuilder();
+
+                for (OfferingResult.MeetingResult meeting : section.meetings()) {
+                    meetingDetails.append(meeting.day())
+                            .append(" ")
+                            .append(TIME.format(meeting.start()))
+                            .append("–")
+                            .append(TIME.format(meeting.end()))
+                            .append(" · ")
+                            .append(session(meeting.session()))
+                            .append("\n");
+                }
+
+                if (section.meetings().isEmpty()) {
+                    meetingDetails.append("No scheduled meeting times available.\n");
+                }
+
+                SectionChoice choice = new SectionChoice(offering.id(), section.name(), label, meetingDetails.toString());
+                choices.add(choice);
+            }
+        }
+
         int count = response.offerings().size();
-        update(count + (count == 1 ? " offering" : " offerings") + " for " + response.normalizedCode(), details);
+        String heading = count + (count == 1 ? " offering" : " offerings") + " for " + response.normalizedCode();
+
+        viewModel.update(new SearchCoursesViewModel.State(heading, details, choices));
     }
 
     // Sessions identify actual calendar periods; F/S designations can also occur in summer.
