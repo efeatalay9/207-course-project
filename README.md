@@ -15,46 +15,41 @@
 Education and student productivity.
 
 ### Description
-Our project is a Java Swing timetable builder for U of T students. The planned app will let students search for courses, add sections to a weekly timetable, see which meetings overlap, and save and reopen their plans.
+
+U of T Timetable Builder is a student project for planning courses before enrolment.
+Students can look up lectures, tutorials, and practicals, put their choices in a
+weekly timetable, check for overlapping meetings, and return to a saved plan later.
+Students enrol separately in ACORN.
 
 Work on a branch and open a pull request for review instead of pushing directly
 to `main`.
 
 ## User Stories
 
-### 1. Find course sections (Matthew) — Implemented
-As a student, I want to search by course code and see the matching offerings,
-their sections, and their meeting times, so I can choose sections that fit my
-schedule.
+### 1. Find course sections (Matthew)
 
-The desktop search suggests every matching course code in alphabetical order as
-you type a prefix, ignoring capitalization and surrounding whitespace. Choose a
-code to retrieve all its offerings, labelled by term and campus, with sections,
-meeting times, cancellation status, and unknown-time information. The console
-continues to accept exact full course codes.
+As a student, I want to find a course by code and compare its sections by term,
+campus, and meeting time so I can decide which section to add.
 
-Autocomplete uses a distinct, sorted in-memory code index and binary search.
-**The index must remain sorted using the same ordering as binary search.** It is
-built once from the catalogue and kept immutable; see the architecture plan for
-the invariant and complexity. The source JSON does not need to be sorted.
+### 2. Add a section to my timetable (Jingyan)
 
-See [the architecture plan](docs/architecture.md) for the agreed responsibilities,
-interfaces, implementation order, and coding conventions.
-
-### 2. Add a section and view its meeting times (Jingyan) — Implemented
-As a student, I want to add a course section and see its scheduled meetings so I can keep track of the sections I’ve chosen.
+As a student who has chosen a section, I want to add it to my timetable so I can
+keep track of the lectures, tutorials, and practicals I plan to attend.
 
 ### 3. View and edit my weekly timetable (Vincent) - In Progress
 
 As a student, I want to see my selected sections on a weekly grid and
 remove sections I no longer want so I can adjust my schedule.
 
-### 4. Check timetable conflicts (someone) - Planned
+### 4. Check timetable conflicts (lead to confirm)
 
 As a student, I want to see which of my selected meetings overlap and
 when they overlap so I can decide which sections to change.
 
-### 5. something () — 
+### 5. Save and reopen a timetable (lead to confirm)
+
+As a student planning across several days, I want to save my timetable and reopen
+it after restarting the app so I can pick up where I left off.
 
 ## Use Cases
 
@@ -85,24 +80,24 @@ when they overlap so I can decide which sections to change.
 - **Primary actor:** Student.
 - **Precondition:** The student is viewing the sections for a course offering.
 - **Trigger:** The student selects a section and clicks **Add to Timetable**.
-- **Success outcome:** The section is selected and all its known meeting times
-  appear in the weekly timetable.
+- **Success outcome:** The planned section is selected and its meeting details
+  appear in My Timetable.
 
 **Main success scenario**
 
 1. The student chooses a specific section from the search results.
 2. The student adds the section to their timetable.
-3. The app displays each of the section's scheduled meetings on the "My Timetable panel."
+3. The app shows the added section and its meeting details in My Timetable.
 
 **Extensions**
 
-- If the section is already selected, the app keeps one copy.
-- If a meeting time is TBA, the app shows the section as selected with a
-  **Time TBA** label and leaves it off the timed grid.
+- **Step 2 — Already selected:** The app keeps one copy.
+- **Step 3 — Time TBA:** The section remains selected with its time marked TBA.
 
 ### Review my weekly timetable
 
 - **Primary actor:** Student.
+- **Precondition:** The course catalogue has loaded.
 - **Trigger:** The student opens the weekly timetable.
 - **Success outcome:** Each scheduled meeting for the displayed academic session appears on the correct day and at the correct time.
 
@@ -113,8 +108,8 @@ when they overlap so I can decide which sections to change.
 
 **Extensions**
 
-- If there are no selected sections, the app shows an empty grid.
-- If a selected section has no knokwn meeting times, the app lists it separately as **Time TBA**
+- **Step 2 — Empty timetable:** The app shows an empty grid.
+- **Step 2 — Time TBA:** The app lists the section separately from the timed grid.
 
 ### Remove a section from my timetable
 
@@ -129,29 +124,113 @@ when they overlap so I can decide which sections to change.
 2. The student chooses **Remove**.
 3. The app removes the section and refreshes the weekly grid.
 
+**Extension:** If the section is no longer selected at step 3, the app reports
+that it could not remove it and keeps the timetable as it was.
+
+### Check timetable conflicts
+
+- **Primary actor:** Student.
+- **Precondition:** The timetable contains selected sections.
+- **Trigger:** The student asks to check an academic session for conflicts.
+- **Success outcome:** The student sees which confirmed meetings overlap and when.
+
+**Main success scenario**
+
+1. The student chooses a session and requests a conflict check.
+2. The app compares meetings that occur on the same day in that session.
+3. For each confirmed overlap, the app shows both course and section labels, the
+   day, and the time they share.
+
+**Extensions**
+
+- **Step 2 — Back-to-back meetings:** A meeting ending as another begins has no overlap.
+- **Step 2 — Unconfirmed time or recurrence:** The app flags the affected meetings
+  for review if it cannot determine whether they occur together.
+- **Step 3 — No confirmed overlaps:** The app reports that it found none and still
+  shows any meetings that need review.
+
+### Save my timetable
+
+- **Primary actor:** Student.
+- **Precondition:** The student has a timetable open.
+- **Trigger:** The student asks to save the current timetable.
+- **Success outcome:** The chosen sections can be restored after restarting the app.
+
+**Main success scenario**
+
+1. The student chooses where to save the timetable.
+2. The app saves the selected sections and confirms the save.
+
+**Extension:** If saving fails at step 2, the app explains the problem and keeps
+the current timetable open for another attempt.
+
+### Reopen a saved timetable
+
+- **Primary actor:** Student.
+- **Precondition:** The student has previously saved a timetable.
+- **Trigger:** The student asks to open a saved timetable.
+- **Success outcome:** The saved section selections are restored and visible.
+
+**Main success scenario**
+
+1. The student picks a saved timetable.
+2. The app restores the selected offerings and sections and shows their meeting details.
+
+**Extensions**
+
+- **Step 2 — File cannot be read:** The app explains the problem and leaves the
+  current timetable intact.
+- **Step 2 — Section has disappeared from the catalogue:** The app identifies the
+  missing selection by its saved label and restores the sections it can match.
+
 ## Minimum Viable Product (MVP)
+
+The core demo follows one student from course search through selecting and
+editing sections, checking a conflict, and saving and reopening their plan after
+restarting. The catalogue refresh provides current source data when available.
+The bundled snapshot also lets the team demonstrate the full planning workflow
+offline. Automatic timetable generation and calendar export are stretch goals.
+
 | Team member | MVP use case | Status |
 |---|---|---|
-| Matthew | Find course sections | Implemented |
-| Jingyan | Add and remove sections from the weekly timetable | In progress |
-| Vincent | View the weekly grid and remove a section | In progress |
-| Person 4| Check timetable conflicts | Planned |
-(add more later)
+| Matthew Chen | Find course sections | Implemented using the bundled catalogue |
+| Jingyan Lin | Add a section to my timetable | Implemented |
+| Vincent He | Review the weekly timetable and remove sections | In review ([PR #7](https://github.com/efeatalay9/207-course-project/pull/7)) |
+| Efe Atalay (proposed) | Check timetable conflicts | Planned |
+| Leon Ren (proposed) | Save and reopen a timetable | Planned |
+
+The conflict and persistence leads are proposed assignments for the team to confirm.
 
 ## Entities
 
-| Entity | Main fields | Relevant behavior |
+| Entity | Instance variables | Relevant methods |
 |---|---|---|
-| `CourseOffering` | Offering ID, course code, title, campus, term, sections | Provides the sections for a particular offering. |
-| `Section` | Section identifier, teaching type, status, meeting times, linked sections | Provides the meeting times and links for a section. |
-| `MeetingTime` | Day, start time, end time, academic session, recurrence, location | Represents when and where a meeting takes place. |
-| `Timetable` (proposed) | Academic term and selected sections | Records section selections for a weekly plan. |
+| `CourseOffering` | ID, code, title, campus, sessions, term designation, cancellation status, sections | `id()`, `sessions()`, `sections()` |
+| `Section` | Name, teaching method, cancellation and TBA flags, meetings, linked sections | `name()`, `meetings()`, `linkedSections()` |
+| `MeetingTime` | Day, start, end, session, location, recurrence and repetition pattern | `day()`, `start()`, `end()`, `session()` |
+| `Timetable` | Section selections keyed by offering ID and section name | `addSection(...)` prevents duplicate selections. Viewing and removing selections are in review. |
 
 ## API Usage
-(add notes here)
+
+**Source:** [University of Toronto Timetable Builder](https://ttb.utoronto.ca/).
+U of T's [EASI documentation](https://easi.its.utoronto.ca/student-information-systems/timetable-builder/)
+describes the official data source and its coverage. The official client uses
+[`GET /ttb/reference-data`](https://api.easi.utoronto.ca/ttb/reference-data) for
+sessions and divisions and `POST /ttb/getPageableCourses` for course offerings,
+sections, and scheduled meetings.
+
+- **How the app uses it:** Course search and meeting displays read the bundled
+  snapshot collected from the course endpoint. A planned Java refresh will
+  retrieve updated catalogue data and keep the bundled snapshot available offline.
+- **Call status:** The course endpoint supplied the bundled September 5, 2026
+  catalogue in an earlier collection. A separate HTTP probe on November 23, 2026
+  confirmed a `200` JSON response from the reference endpoint. Live requests from
+  the Swing app are still planned.
 
 ## Design Diagrams
-(add notes here)
+
+The [architecture plan](docs/architecture.md#approach-and-dependencies) includes
+the course-search class diagram and the catalogue, use-case, and display boundaries.
 
 ## Catalogue data
 
@@ -162,9 +241,9 @@ snapshot, not live enrolment information.
 
 ## Project status
 
-The first search flow is implemented with a Swing desktop tester, an interactive
-console, a sample catalogue, and automated tests. Timetable editing and conflict
-detection are not implemented yet.
+Course search, autocomplete, and adding sections are on `main`. The weekly grid
+and section removal are in review. Conflict checking, timetable persistence, and
+live API refresh are planned.
 
 ## Run locally
 
