@@ -42,6 +42,7 @@ public final class WeeklyTimetablePanel extends JPanel {
   private final JTextArea notes = new JTextArea(3, 20);
   private final JLabel status = new JLabel(" ");
   private boolean rendering;
+  private Runnable onSelectionsChanged = () -> {};
 
   /**
    * Builds the panel. Construct it on Swing's event thread.
@@ -73,6 +74,11 @@ public final class WeeklyTimetablePanel extends JPanel {
     sessionChooser.addActionListener(event -> sessionChanged());
     removeButton.addActionListener(event -> removeSelected());
     refresh();
+  }
+
+  /** Lets the search view refresh candidate warnings after a section is removed. */
+  public void setOnSelectionsChanged(Runnable listener) {
+    onSelectionsChanged = java.util.Objects.requireNonNull(listener);
   }
 
   /** Redraws the timetable and the status set by the latest section action. */
@@ -133,6 +139,7 @@ public final class WeeklyTimetablePanel extends JPanel {
       removeController.remove(selected.offeringId(), selected.sectionName());
     }
     refresh();
+    onSelectionsChanged.run();
   }
 
   private void selectInList(String offeringId, String sectionName) {

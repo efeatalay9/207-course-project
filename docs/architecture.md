@@ -132,3 +132,74 @@ For synchronous in-memory actions, the current views can render after the contro
 For grading evidence, the [project pattern proposal](project-plan.md#design-choice-to-show-in-the-presentation) uses Memento for preserving a timetable before applying a generated plan or replacement. An immutable plan snapshot carries the old choices. The use case can keep it for the existing save/restore workflow while the active plan still owns validation and mutation. The [course expectation](project-expectations.md#design-pattern-expectation) explains the rubric distinction.
 
 The next work follows the [integration order](project-plan.md#integration-and-verification-order). Use explicit Java types and plain names. When two views need the same refresh, let the presenter publish a simple view-model change and subscribe with Java's `PropertyChangeSupport`. With one view, an explicit Swing refresh can remain a simple implementation. In tests, inject a presenter recorder and assert its outcome after the interactor returns. [Course style and coverage expectations](project-expectations.md#style-and-checkstyle) · [Course architecture notes](course-notes-summary.md#specification-design-and-architecture)
+
+## Section overlap warnings
+
+`domain.MeetingOverlap` compares half-open meeting intervals in an academic
+session and weekday. It distinguishes confirmed weekly clashes from possible
+clashes whose recurrence is unverified. `usecase.overlaps.SectionOverlapChecker`
+resolves section identities through `OfferingLookup`, compares every meeting
+against a snapshot of current selections, and returns typed warnings. It does
+not change the timetable or enforce linked-component validity.
+
+The search warning interactor has input/output boundaries and a separate
+controller/presenter. Its presenter decorates section choices with warning text.
+The view-timetable interactor reuses the same checker; its presenter attaches
+warnings only to the affected meeting blocks. Swing handles colours, labels,
+and hover text. Warnings refresh after searches and selection changes, while
+`AddSectionInteractor` continues to allow time conflicts. The current offering-ID
+adapters read from memory; a future remote lookup must keep this work off Swing's
+event thread.
+
+### SOLID review of overlap warnings
+
+| Principle | Current boundary and verification |
+| --- | --- |
+| Single responsibility | `MeetingOverlap` compares intervals; `SectionOverlapChecker` resolves and compares sections; interactors coordinate requests; presenters format warnings; Swing renders them. Addition remains a separate operation. |
+| Open/closed | Search and timetable interactors accept `SectionOverlapCheck`. Another policy can be supplied at startup without editing those callers. New completeness checks should have their own result and presenter rather than extending the meaning of overlap warnings. |
+| Liskov substitution | Checker implementations follow the same contract: one immutable result per candidate, no mutation of input selections, and `CatalogAccessException` for unavailable data. A substitute checker is tested through both callers. Uncertain data remains explicit rather than becoming a confirmed fit. |
+| Interface segregation | The warning input/output boundaries, overlap policy, and offering lookup each expose only the operations their callers need. The warning checker does not require add/remove or Swing methods. |
+| Dependency inversion | Use cases depend on lookup/output/policy interfaces; `Main` supplies concrete implementations. Domain and use cases do not import Swing, HTTP, or Gson. The compiled dependency test verifies these layer directions. |
+
+These checks support the current feature's design; they do not prove all future
+features are SOLID. Preserve the contracts when replacing adapters. Current
+lookup adapters resolve offering IDs in memory. A remote implementation would
+also require background execution at the UI boundary.
+
+### Required components and view updates (planned)
+
+A timetable can have no overlapping times while still lack a mandatory tutorial
+or practical. Keep **time overlap** and **selection completeness** as separate
+results, both visible at once. Do not treat the presence of a tutorial in the
+catalogue as proof it is mandatory: the source's required-component and linkage
+rules must establish that, and the current domain does not yet preserve every
+such rule.
+
+1. Add a separate selection-completeness use case that reads the selected offering
+   IDs/section names and a verified component-requirement lookup. Coordinate its
+   contract with the shared linked-bundle work led by Efe. It should return typed
+   outcomes such as `COMPLETE`, `MISSING_REQUIRED_COMPONENT`,
+   `INCOMPATIBLE_SELECTION`, and `NEEDS_REVIEW`, with the affected offering,
+   component, and permitted linked choices. Do not put this logic in Swing or
+   `MeetingOverlap`.
+2. Give that result a separate presenter and view-model field. Keep overlap
+   warnings intact rather than replacing them with completeness text. The view
+   can show an amber badge beside a course group: **Tutorial required — choose
+   one linked to LEC0101**. If a tutorial is selected without a required lecture,
+   show the missing lecture. Show uncertain requirements as **Needs review**.
+3. Trigger recomputation after adding, removing, changing a lecture, loading a
+   plan, or refreshing relevant catalogue data. Publish a complete new display
+   state so a resolved warning disappears. A shared selection-change event can
+   replace the current callback as more views subscribe; keep it limited to
+   actual consumers instead of introducing a general event framework.
+4. Keep manual editing incremental: adding a lecture first may leave a visible
+   missing-tutorial warning without preventing the addition. Full-bundle fit,
+   generation, and replacement may require complete verified choices before
+   labelling a result valid. Do not silently add another section.
+5. Test a lecture missing its mandatory tutorial, a tutorial missing its lecture,
+   an incompatible linked choice, a complete choice, an optional component, an
+   unknown rule, and a removal that reintroduces a warning. Test that changing
+   completeness status preserves any independent time-overlap warnings.
+
+This is an implementation handoff, not a claim that mandatory-component badges
+or a full Fits My Timetable feature are already present.

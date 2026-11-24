@@ -9,6 +9,8 @@ import domain.CourseOffering;
 import domain.Timetable;
 import interfaceadapter.addsection.AddSectionController;
 import interfaceadapter.addsection.AddSectionPresenter;
+import interfaceadapter.overlaps.CheckSectionOverlapsController;
+import interfaceadapter.overlaps.CheckSectionOverlapsPresenter;
 import interfaceadapter.removesection.RemoveSectionController;
 import interfaceadapter.removesection.RemoveSectionPresenter;
 import interfaceadapter.searchcourses.SearchCoursesController;
@@ -32,6 +34,8 @@ import java.util.List;
 import javax.swing.SwingUtilities;
 import usecase.addsection.AddSectionInteractor;
 import usecase.common.CatalogAccessException;
+import usecase.overlaps.CheckSectionOverlapsInteractor;
+import usecase.overlaps.SectionOverlapChecker;
 import usecase.removesection.RemoveSectionInteractor;
 import usecase.searchcourses.CourseCatalog;
 import usecase.suggestcoursecodes.CourseCodeIndex;
@@ -188,6 +192,7 @@ public final class Main {
     SuggestCourseCodesController suggestions =
         new SuggestCourseCodesController(application.suggestions());
     Timetable timetable = new Timetable();
+    SectionOverlapChecker overlapCheck = new SectionOverlapChecker(offeringLookup);
     TimetableViewModel timetableModel = new TimetableViewModel();
     AddSectionController add =
         new AddSectionController(
@@ -196,28 +201,34 @@ public final class Main {
     ViewTimetableController viewTimetable =
         new ViewTimetableController(
             new ViewTimetableInteractor(
-                timetable, offeringLookup, new ViewTimetablePresenter(timetableModel)));
+                timetable,
+                offeringLookup,
+                overlapCheck,
+                new ViewTimetablePresenter(timetableModel)));
     RemoveSectionController remove =
         new RemoveSectionController(
             new RemoveSectionInteractor(timetable, new RemoveSectionPresenter(timetableModel)));
-    SwingUtilities.invokeLater(
-        () -> {
-          WeeklyTimetablePanel timetablePanel =
-              new WeeklyTimetablePanel(viewTimetable, remove, timetableModel);
-          SearchView desktopView =
-              new SearchView(
-                  controller,
-                  viewModel,
-                  suggestions,
-                  suggestionsModel,
-                  source,
-                  add,
-                  timetablePanel,
-                  filters);
-          desktopView.show();
-          output.println("Desktop search window opened.");
-          output.flush();
-        });
+    SwingUtilities.invokeLater(() -> {
+      WeeklyTimetablePanel timetablePanel =
+          new WeeklyTimetablePanel(viewTimetable, remove, timetableModel);
+      SearchView desktopView =
+          new SearchView(
+              controller,
+              viewModel,
+              suggestions,
+              suggestionsModel,
+              source,
+              add,
+              timetablePanel,
+              filters);
+      desktopView.setOverlapController(
+          new CheckSectionOverlapsController(
+              new CheckSectionOverlapsInteractor(
+                  timetable, overlapCheck, new CheckSectionOverlapsPresenter(viewModel))));
+      desktopView.show();
+      output.println("Desktop search window opened.");
+      output.flush();
+    });
   }
 
   // Sample data is bundled in the JAR; real data is read directly from its existing ZIP.

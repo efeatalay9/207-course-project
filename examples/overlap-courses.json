@@ -1,0 +1,91 @@
+[
+  {
+    "id": "overlap-CSC108H1",
+    "code": "CSC108H1",
+    "name": "Fictional overlap demo",
+    "campus": "St. George",
+    "sectionCode": "F",
+    "sessions": [
+      "20269"
+    ],
+    "cancelInd": "N",
+    "sections": [
+      {
+        "name": "LEC0101",
+        "teachMethod": "LEC",
+        "cancelInd": "N",
+        "tbaInd": "N",
+        "meetingTimes": [
+          {
+            "start": {
+              "day": 1,
+              "millisofday": 32400000
+            },
+            "end": {
+              "day": 1,
+              "millisofday": 36000000
+            },
+            "sessionCode": "20269",
+            "repetition": "WEEKLY",
+            "repetitionTime": "ONCE_A_WEEK"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "overlap-CSC148H1",
+    "code": "CSC148H1",
+    "name": "Fictional overlap demo",
+    "campus": "St. George",
+    "sectionCode": "F",
+    "sessions": [
+      "20269"
+    ],
+    "cancelInd": "N",
+    "sections": [
+      {
+        "name": "TUT0101",
+        "teachMethod": "TUT",
+        "cancelInd": "N",
+        "tbaInd": "N",
+        "meetingTimes": [
+          {
+            "start": {
+              "day": 1,
+              "millisofday": 34200000
+            },
+            "end": {
+              "day": 1,
+              "millisofday": 37800000
+            },
+            "sessionCode": "20269",
+            "repetition": "WEEKLY",
+            "repetitionTime": "ONCE_A_WEEK"
+          }
+        ]
+      },
+      {
+        "name": "PRA0101",
+        "teachMethod": "PRA",
+        "cancelInd": "N",
+        "tbaInd": "N",
+        "meetingTimes": [
+          {
+            "start": {
+              "day": 1,
+              "millisofday": 36000000
+            },
+            "end": {
+              "day": 1,
+              "millisofday": 39600000
+            },
+            "sessionCode": "20269",
+            "repetition": "WEEKLY",
+            "repetitionTime": "ONCE_A_WEEK"
+          }
+        ]
+      }
+    ]
+  }
+]
