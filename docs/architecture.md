@@ -1,258 +1,134 @@
-# Architecture plan
+# Architecture
 
-## First feature and acceptance criteria
+The current baseline is `main` at `07ecb4a`, which includes [PR #7](https://github.com/efeatalay9/207-course-project/pull/7). See the [project plan](project-plan.md) for product behaviour, the [implementation guide](implementation-guide.md) for the Java design and data, and the [course expectations](project-expectations.md#how-to-implement-a-use-case) for the use-case checklist.
 
-As a student, I want to search by course code and see the matching offerings,
-their sections, and their meeting times, so I can choose sections that fit my
-schedule.
+## Dependency direction
 
-The initial flow is: enter a course code, search the catalogue, and display matching
-offerings with their sections and meeting times.
+The domain contains entities and their reusable rules. The use-case layer depends on the domain and owns the input, output, and data access interfaces it needs. The outer adapters implement those interfaces. Startup wiring can refer to concrete implementations to connect them.
 
-- Ignore surrounding whitespace and capitalization when matching a full code.
-- In the desktop view, suggest all distinct codes starting with the entered prefix,
-  in alphabetical order. Choosing one performs the existing full-code search.
-- Return every matching offering, labelled with its term and campus.
-- Display each section's teaching type, known meeting times, and cancellation or
-  TBA information. Preserve academic-session and recurrence details.
-- Show a clear no-results message for an unknown code.
-- Treat blank input as invalid and do not query the catalogue.
-- Distinguish a catalogue failure from a successful search with no results.
-- Do not interpret missing meeting times as proof of an asynchronous section or
-  as proof that a section fits any schedule.
-
-Timetable editing and automatic conflict detection are later features. This first
-feature presents information so that students can assess their options themselves.
-
-## Approach and dependencies
-
-Use a small Clean Architecture design in Java. Keep domain objects and application
-rules independent of storage formats and UI libraries. Interfaces belong to the
-use case that needs them, and outer adapters implement those interfaces.
-
-| Package | Components | Responsibility |
+| Package | Current responsibilities | Responsibilities as the plan grows |
 | --- | --- | --- |
-| `domain` | `CourseOffering`, `Section`, `MeetingTime` | Represent catalogue concepts and basic validity rules |
-| `usecase.searchcourses` | `SearchCoursesInteractor`, request/response data, boundaries, `CourseCatalog` | Validate and coordinate search |
-| `usecase.suggestcoursecodes` | `SuggestCourseCodesInteractor`, boundaries, `CourseCodeIndex`, response | Normalize prefixes and coordinate autocomplete |
-| `dataaccess.catalog` | `JsonCatalogLoader`, `InMemoryCourseCatalog` | Map JSON into domain objects and index offerings for lookup |
-| `interfaceadapter.searchcourses` | Controller, presenter, view model | Translate UI actions into requests and responses into display state |
-| `interfaceadapter.suggestcoursecodes` | Controller, presenter, view model | Translate typing events into requests and dropdown display state |
-| `view` | Search view | Accept input and display results |
-| `app` | `Main` | Load data, construct implementations, and connect dependencies |
+| `domain` | Offering, section, typed meeting time, linked-section reference, status flags, selected section, and in-memory timetable | Extend timetable state with locks and blocked time. Add the course plan and academic profile. Keep interval and section combination rules in ordinary Java. |
+| `usecase` | Search, autocomplete, basic add, view timetable, and remove | Add the named interactors, boundaries, request/response data, and needed data access interfaces. Coordinate shared schedule checks. |
+| `dataaccess` | JSON/ZIP loading and in-memory catalogue lookups | Decode public rules, timestamps, routes, and plan files. Implement network and persistence interfaces. |
+| `interfaceadapter` | Controllers, presenters, and current view models | Convert input and prepare display state for the remaining actions. Display failures and uncertain results. |
+| `view` | Swing search, code dropdown, and weekly grid, plus the console search view | Add search filters, details, course plan, profile and file actions. Own Swing components and their rendering. |
+| `app` | Load the catalogue and connect the application | Construct shared timetable, catalogue, and other adapters. Pass dependencies to controllers, presenters, and interactors. |
 
-Domain code depends on no outer layer. Use cases depend on domain objects. Data
-and UI adapters depend on the relevant use-case contracts. Only startup wiring
-needs to know all the concrete implementations.
+The `ArchitectureTest` uses `jdeps` to check compiled package dependencies. It gives a regression check for dependency direction. Use-case tests and the runtime flow show whether the app also follows the course's interaction pattern. Keep Gson and Swing out of entities and use cases. [CSC207 Clean Architecture notes](https://github.com/CSC207-UofT/207-course-notes/blob/HEAD/11-clean-architecture.md)
+
+The course's optional CAVE examples use names such as `entity`, `data_access`, `interface_adapter`, and `use_case`. The team's `domain`, `dataaccess`, `interfaceadapter`, and `usecase` packages group equivalent responsibilities. CAVE's auto-detection may need interpretation. The repo's compiled dependency test checks the actual package direction. Inspect both the source imports and interface ownership when reviewing changes. [Course tool guidance](quercus-project-guide.md#clean-architecture-checks-and-individual-reflection)
+
+## Current working flows
+
+### Search and autocomplete
+
+`SearchApplication.connect` accepts the catalogue read interfaces and output boundaries, and returns the search and suggestion input boundaries. The console and Swing renderers can use the same exact-code flow. The interactor trims and normalizes the query, retrieves all matching offerings through `CourseCatalog`, orders them consistently, and creates structured output. A presenter formats the result and replaces the view model state for success, invalid input, and access failure. The view receives display data.
 
 ```mermaid
 classDiagram
     class SearchCoursesInputBoundary {
         <<interface>>
-        +execute(SearchCoursesRequest)
     }
     class CourseCatalog {
         <<interface>>
-        +findByCode(code) List~CourseOffering~
     }
     class SearchCoursesOutputBoundary {
         <<interface>>
-        +present(SearchCoursesResponse)
     }
-
+    SearchView --> SearchCoursesController
+    SearchView --> SearchCoursesViewModel
     SearchCoursesController --> SearchCoursesInputBoundary
     SearchCoursesInteractor ..|> SearchCoursesInputBoundary
     SearchCoursesInteractor --> CourseCatalog
     SearchCoursesInteractor --> SearchCoursesOutputBoundary
     InMemoryCourseCatalog ..|> CourseCatalog
-    JsonCatalogLoader --> CourseOffering : constructs
-    InMemoryCourseCatalog --> CourseOffering : indexes
     SearchCoursesPresenter ..|> SearchCoursesOutputBoundary
     SearchCoursesPresenter --> SearchCoursesViewModel
-    SearchView --> SearchCoursesController
-    SearchView --> SearchCoursesViewModel : displays
     CourseOffering "1" *-- "0..*" Section
     Section "1" *-- "0..*" MeetingTime
 ```
 
-`Main` injects a catalogue and output boundary into the interactor through its
-constructor. The interactor does not construct a loader, presenter, or view.
-Load and index the catalogue once at startup rather than parsing the full file
-for every search. Report a startup load failure clearly instead of substituting
-an apparently valid empty catalogue.
+The catalogue implements two narrow ports. `CourseCatalog` retrieves offerings for a normalized full code. `CourseCodeIndex` provides sorted, distinct matching codes for a prefix. The full-code lookup returns an empty list for no matches and reports access failure via `CatalogAccessException`. `JsonCatalogLoader` streams the top-level array from a file or ZIP. `JsonOfferingMapper` owns source field names, validation, and date/time decoding.
 
-## Domain model
+The live API draft supplies an adapter for the same ports. It accepts a term and division as a `CatalogueScope` and keeps HTTP, JSON and caching in data access. The timetable continues using `OfferingLookup` to resolve selected offerings. The bundled ZIP remains an offline adapter. [Draft API PR #9](https://github.com/efeatalay9/207-course-project/pull/9)
 
-- `CourseOffering`: offering ID, code, title, campus, academic sessions, term
-  designation, cancellation status, and sections. Use the offering ID for identity;
-  a code alone is not unique.
-- `Section`: identity within an offering, name, teaching type, cancellation/TBA
-  status, meeting times, and linked-section references.
-- `MeetingTime`: day, start/end time, academic session, optional location, and
-  recurrence information.
+**Prefix-index invariant.** Keep the immutable list of normalized distinct codes sorted by natural Java string order, the same order used by binary search. The initial build sorts the catalogue keys even if the JSON is shuffled. A query finds the lower bound and walks the matching range in **O(log n + k)** time for `n` distinct codes and `k` results. Eight rows are visible at once and the dropdown scrolls over the complete matching set. Rebuild the index when the catalogue changes.
 
-Prefer immutable objects and read-only collections. Represent absent information
-explicitly. Lectures, tutorials, and practicals are section types, not subclasses
-of course offerings. Preserve recurrence and section-link information for later
-scheduling features without implementing those features now.
+### Weekly timetable and removal
 
-The supplied snapshot contains multiple offerings for 1,028 course codes, sections
-without meeting times, cancelled sections, and weekly, alternate-week, and manual
-recurrence values. Confirm source encodings, including day numbering, before
-mapping them into display labels; do not silently invent missing dates or times.
+`Main` passes one `Timetable` to add, remove, and view. The timetable owns ordered `SelectedSection` identities. `ViewTimetableInteractor` uses `OfferingLookup` to resolve those IDs into a session slice and well-typed meeting and status records. `ViewTimetablePresenter` turns them into `TimetableViewModel` state. `WeeklyTimetablePanel` and `WeeklyGrid` display it. `RemoveSectionInteractor` returns an outcome through its presenter, and the panel requests the updated view.
 
-## Shared contracts
+The current grid draws simultaneous display blocks in separate lanes. A recurrence-aware conflict decision belongs in the reusable schedule rules described below. The current weekly projection groups sections with no known meeting time under TBA. Extend the mapped source status so confirmed asynchronous meetings, TBA, arranged schedules, and cancelled sections have distinct outputs.
 
-- `SearchCoursesRequest` contains the entered code. The interactor owns trimming,
-  case normalization, and input validation.
-- `CourseCatalog.findByCode` accepts a normalized full code and returns all matching
-  offerings. An empty list means no matches; implementations never return `null`.
-  If access fails, use a catalogue-specific failure defined at the use-case
-  boundary, not a JSON-library or filesystem exception.
-- `SearchCoursesResponse` distinguishes success, invalid input, and catalogue
-  failure. Success may contain zero results. Response data is independent of UI
-  widgets and JSON structures.
-- The presenter owns display formatting and messages. The view receives display
-  state rather than raw JSON or mutable domain objects.
-- Search results have a documented, deterministic ordering. Specify the exact
-  ordering and concrete data types together when writing the contracts. The initial
-  implementation uses immutable Java records and orders offerings by sorted session
-  codes, campus, term designation, then offering ID. Sections sort by name; meetings
-  sort by session, weekday, start, end, recurrence, and location.
+### Add Section
 
-## Implemented class map
+The local review build sends an `AddSectionRequest` with the offering ID and exact section name through `AddSectionInputBoundary`. The interactor uses the same `OfferingLookup` as the weekly grid to check that the offering and section exist and neither is confirmed cancelled. An existing section with a time to be announced can still be added. `Timetable` keeps one copy of a selection.
 
-- `StatusFlag` represents yes, no, and unknown values. `LinkedSection` represents a
-  section reference within an offering without recursively expanding that section.
-- `OfferingResult` and its nested records copy data across the output boundary.
-  `SearchCoursesResponse` explicitly distinguishes success, invalid input, and failure.
-- `usecase.common.CatalogAccessException` is the shared use-case-owned failure
-  contract for lookup adapters, so autocomplete does not depend on the search package.
-  `CatalogLoadException` is a separate data-layer startup failure.
-- `JsonCatalogLoader` streams a top-level JSON array one offering at a time, from
-  a plain file, ZIP entry, or caller-owned reader. `JsonOfferingMapper` handles the
-  external field names and conversions. Neither is used by the search interactor.
-- `SearchCoursesViewModel` holds plain display text. `SearchView` renders it in Swing,
-  while `ConsoleSearchView` supports terminal use and end-to-end fixture tests.
-- `CourseCodeDropdown` handles Swing typing, arrow keys, scrolling, Escape, and
-  selecting a code. It calls the suggestion controller, not the catalogue directly.
-- `Main` loads data before starting Swing, then injects the in-memory catalogue and
-  presenter into the interactor. Indexed searches run synchronously. Introducing a
-  remote catalogue would also require background execution in the UI adapter so
-  network latency does not block Swing's event thread.
-- `SearchApplication.connect` is the UI-independent wiring point. It accepts the
-  two catalogue ports and the two output boundaries and returns input boundaries.
-  `Main` selects concrete implementations; the rest of the application does not.
+`AddSectionOutputBoundary` publishes one typed result. `AddSectionPresenter` writes the status for added, already selected, no selection, missing, cancelled, or catalogue unavailable. Swing refreshes the weekly grid from the same timetable and displays that status. Direct interactor tests check all outcomes and the separate Swing panel test verifies that the status survives a refresh. [Add Section tests](../src/test/java/usecase/addsection/AddSectionInteractorTest.java) · [Timetable panel test](../src/test/java/view/WeeklyTimetablePanelTest.java)
 
-## Replacing a module
+## Entities and shared contracts
 
-To replace the visualizer, implement `SearchCoursesOutputBoundary` and
-`SuggestCourseCodesOutputBoundary` with presenters for the new UI. Pass those
-presenters to `SearchApplication.connect` and connect the returned input boundaries
-to the new UI's input controls. The structured `OfferingResult` records contain
-sections and typed times, so a graphical view never needs to parse the existing
-text presenter. If only the window toolkit changes and text display is sufficient,
-the existing presenters and view models can be reused directly.
+| Object | Identity and values | Behaviour |
+| --- | --- | --- |
+| `CourseOffering` | Source offering ID, catalogue code, sessions, campus, title, sections | Resolve linked sections within this offering. Several offerings can have the same course code. |
+| `Section` | Section identifier within its offering, teaching method, states, meetings, links | Keep required component and linkage facts when present. Report missing or contradictory facts through the use case. |
+| `MeetingTime` | Academic session, weekday, local start/end, recurrence, and location | Preserve source times and recurrence. Compare confirmed occurrences as intervals. |
+| `SelectedSection` and `Timetable` | Offering/section identities in insertion order. Proposed locks and personal blocks. | Add/remove selections, expose a defensive snapshot, and apply an accepted generated or repaired plan safely. |
+| `CoursePlan` | Proposed basket of offering IDs and per-term preferences | Add/remove target courses and prepare generator input. |
+| `AcademicProfile` | Proposed completed codes, optional grades, and supported facts | Provide the local facts used in published rule evaluation. |
 
-To replace storage, implement `CourseCatalog` and/or `CourseCodeIndex` and inject
-them through the same wiring method. They can be separate implementations. Keep
-their normalization, no-match, sorted/distinct suggestion, and failure contracts.
-No domain or interactor changes are needed for either substitution. `Main` is
-intentionally the place where concrete launch choices change.
+Stable IDs and explicit uncertainty carry through the DTOs. Keep source day numbering Monday=1 through Sunday=7. Parse `millisofday` as a local time-of-day offset. Keep raw session codes where the app cannot reliably label them. For ordered search results, retain session, campus, term designation, and offering ID as ties. Meetings retain session, weekday, start, end, recurrence, and location. Keep a saved selection unresolved if it disappears.
 
-`SearchApplicationTest` verifies that an alternative renderer receives structured
-results and that independent catalogue adapters produce the same search outcomes.
-`ArchitectureTest` uses the JDK's dependency analyzer to enforce layer boundaries
-on the compiled classes: no Swing/JSON imports in domain or use cases, no concrete
-data/UI imports in presenters, and no direct catalogue access in views.
+### Shared scheduling logic
 
-The adapter maps source day numbers using Monday=1 through Sunday=7, verified in
-the [official timetable application's JavaScript](https://ttb.utoronto.ca/main.934e36b03104594f.js)
-on November 21, 2026. `millisofday` is a wall-clock offset, not an epoch timestamp.
-Session labels retain the raw code alongside the interpreted year/month. F/S/Y
-designations are shown verbatim rather than assuming F always means fall.
+Put the smallest reusable rules in the domain and orchestration in the use-case layer. Use ordinary records and collections so fit, generation, conflict display, and repair can share them.
 
-Missing metadata stays unknown. Invalid required identity or meeting data fails
-the load with a record/path diagnostic. The first implementation rejects overnight
-meetings rather than silently losing the end day; the supplied snapshot contains
-no such intervals. Weekly, alternate-week, and manual recurrence information is
-retained, but actual dates and scheduling conflicts are not calculated yet.
+- Build the complete component combinations for an offering from published requirements and linkage. An unverified combo has an explicit data status.
+- Check scheduled meetings and blocked intervals across dates or supported recurrence. A visual lane collision is decided by the grid for layout. A true conflict comes from the scheduling result.
+- Reuse the checker for Find Courses That Fit, Generate a Timetable, Replace a Section That Filled Up, and the timetable conflict summary.
+- Pass section combinations to the generator, keep the pure search testable, and evaluate ranking after hard rules. Give ranking and diversity a simple deterministic order.
+- Keep travel estimation separate from scheduled time validity. Display the source and reason for unknown travel where needed.
 
-## Autocomplete index and required ordering
+### Proposed rule and plan adapters
 
-`InMemoryCourseCatalog` implements two narrow ports: `CourseCatalog` for full-code
-offering lookup and `CourseCodeIndex` for prefix suggestions. A separate suggestion
-use case avoids adding autocomplete responsibilities to every exact-search adapter.
-The shared catalogue-access exception represents failures for either lookup.
+The prerequisite file is a typed public rule tree. The HTTP adapter fetches a fixed URL and maps validated data to operations such as all, any, conditional, course, minimum grade, and earned credits. The interactor compares that tree against the local profile. Expose the original published requirement text with the decision. Use a cached valid rule set when a refresh fails. The separate Java prototype demonstrated this flow and reported limited conversion coverage. See [catalogue and external services](project-plan.md#catalogue-and-external-services) for the verified boundaries.
 
-The catalogue constructs a hash map from normalized code to offerings, then builds
-a sorted, distinct list from the map's keys. The supplied snapshot has 8,172
-offerings and 7,094 distinct codes. Multiple terms for one code produce one
-suggestion, while selecting that code still retrieves every matching offering.
+Use a use-case-owned interface for reading and saving plans, with a JSON file adapter. Check version and selected identities before replacing the active timetable. For explicit plan sharing, reuse a plan-only representation. Preserve local completed-course and grade data independently of the share format. Keep a shared timetable state in startup wiring so loading or applying a candidate updates all views that depend on it.
 
-**Required invariant: the prefix index must be sorted by natural Java String order,
-using the same comparison as binary search, after normalization.** The constructor
-sorts explicitly; it does not rely on JSON ordering, map iteration order, or the UI.
-The list is immutable. When catalogue contents change, build a new complete index;
-do not append codes to the old sorted list. Sorting with a different comparator
-(for example a locale-specific display comparator) would invalidate this search.
+## Example sequence for the prerequisite check
 
-With `n` distinct codes and `k` matches, sorting costs `O(n log n)` once at load
-time, with `O(n)` extra index space. Each prefix query finds its lower bound using
-binary search, then walks the contiguous matching range, for `O(log n + k)` time
-and `O(k)` result space. A fresh unsorted scan costs `O(n)` per keystroke and would
-also need to sort its matches for alphabetical display. These bounds treat code
-comparisons as constant cost because course codes are short. Showing all matches
-necessarily takes at least `O(k)` work.
+```mermaid
+sequenceDiagram
+    actor Student
+    participant View as Offering details
+    participant Controller as Prerequisite controller
+    participant Interactor as Check prerequisites interactor
+    participant Rules as Rule lookup interface
+    participant Profile as Local academic profile
+    participant Presenter as Prerequisite presenter
+    participant Model as Result view model
+    Student->>View: Check prerequisites
+    View->>Controller: Selected offering ID
+    Controller->>Interactor: Execute request
+    Interactor->>Rules: Get published rule and source text
+    Rules-->>Interactor: Rule and date, or unavailable
+    Interactor->>Profile: Read relevant course and grade facts
+    Profile-->>Interactor: Local facts
+    Interactor->>Presenter: Present comparison outcome
+    Presenter->>Model: Update status, explanation, and wording
+    Model-->>View: Render result
+```
 
-No persistent database is needed for this snapshot. The sorted in-memory index is
-the guarantee; the external JSON may remain unsorted. Exact-code lookup retains
-the hash map. Blank input clears autocomplete without scanning the catalogue.
-The desktop dropdown displays eight rows at once and scrolls over the full result
-set; it never truncates the matching list. The console retains exact-code search.
+For synchronous in-memory actions, the current views can render after the controller call. For HTTP refresh and generation, put long work on a Swing worker and keep view updates on the event dispatch thread. Capture the active plan before generation and validate the candidate against current state at apply time.
 
-## SOLID rules in practice
+## SOLID and review examples
 
-| Principle | Application |
-| --- | --- |
-| Single responsibility | Loader parses, catalogue searches, interactor coordinates, presenter formats, and view renders. |
-| Open/closed | An alternative catalogue implements `CourseCatalog` without requiring changes to the search interactor. |
-| Liskov substitution | Real and fake catalogues obey the same matching, empty-result, and failure contracts. |
-| Interface segregation | Search needs a narrow read interface; future timetable saving gets a separate interface. |
-| Dependency inversion | The use case defines the abstractions; data and presentation implementations are injected. |
+- **Single responsibility.** Catalogue parsing, search, presentation, and grid drawing are distinct. Extend the same separation to plan serialization and generation.
+- **Dependency inversion.** `SearchCoursesInteractor` receives catalogue and output interfaces. `SearchApplicationTest` demonstrates interchangeable storage and output. Use the same approach for rules and local plans.
+- **Interface segregation.** Code suggestions depend on `CourseCodeIndex`. The calendar lookup depends on `OfferingLookup`. Add methods to an interface when a real caller needs them.
+- **Extensibility.** A new source can provide the same catalogue or rule data through its adapter. If comparing ranking strategies with distinct user preferences, use a small Strategy where it helps. Show the implemented class and motivation before presenting it as a design pattern.
 
-Create interfaces at meaningful boundaries. Do not add an interface for every
-class or introduce inheritance without a concrete substitutability requirement.
+For grading evidence, the [project pattern proposal](project-plan.md#design-choice-to-show-in-the-presentation) uses Memento for preserving a timetable before applying a generated plan or replacement. An immutable plan snapshot carries the old choices. The use case can keep it for the existing save/restore workflow while the active plan still owns validation and mutation. The [course expectation](project-expectations.md#design-pattern-expectation) explains the rubric distinction.
 
-## Working together and code readability
-
-- Agree on shared method signatures and request/response types before dividing
-  implementation work. Coordinate changes to these contracts with their consumers.
-- Split work along domain, search, catalogue, and UI boundaries. Use feature
-  branches and small pull requests; do not push directly to `main`.
-- Use descriptive names, small focused methods, and a consistent package layout.
-- Declare explicit variable types in production code and tests; do not use `var`.
-  Prefer precise interface types such as `List<CourseOffering>` or `CourseCatalog`
-  when the implementation can vary, rather than coupling callers to concrete classes.
-- Add plain comments documenting each class's purpose and each method's role,
-  inputs, outputs, and failure behaviour where relevant. Javadoc is not required
-  yet. Explain non-obvious decisions and data assumptions rather than narrating
-  every statement.
-- Keep parsing details, filesystem paths, and UI-specific dependencies out of the
-  domain and use-case packages.
-- Explain the change and its validation in each pull request so teammates can
-  understand and extend the implementation.
-
-## Implementation order and validation
-
-1. Establish the build setup, shared contracts, and small domain model.
-2. Implement search using a fake catalogue and a capturing output boundary. Test
-   normalization, blank input, multiple offerings, no matches, and access failure.
-3. Implement JSON mapping and indexed lookup with small representative fixtures.
-   Cover missing times, cancellation/TBA flags, recurrence, and linked sections.
-4. Connect the controller, presenter, and minimal view through startup wiring.
-5. Smoke-test the full search flow using the supplied catalogue.
-
-Routine tests should use small fixtures rather than loading the entire 130 MB
-catalogue. Add timetable selection and conflict detection as separate use cases
-after the first search flow works.
+The next work follows the [integration order](project-plan.md#integration-and-verification-order). Use explicit Java types and plain names. When two views need the same refresh, let the presenter publish a simple view-model change and subscribe with Java's `PropertyChangeSupport`. With one view, an explicit Swing refresh can remain a simple implementation. In tests, inject a presenter recorder and assert its outcome after the interactor returns. [Course style and coverage expectations](project-expectations.md#style-and-checkstyle) · [Course architecture notes](course-notes-summary.md#specification-design-and-architecture)

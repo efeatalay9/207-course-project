@@ -1,240 +1,77 @@
 # U of T Timetable Builder
 
-## Team Information
+**Domain:** Education and student productivity.
 
-### Team Members
-- Matthew Chen
-- Efe Atalay
-- Jingyan Lin
-- Vincent He
-- Leon Ren
+This CSC207 Java Swing project helps U of T students browse courses, plan a weekly timetable, and prepare alternatives for enrolment. The target includes the official builder's planning workflows plus checks for course fit, prerequisites and walking time, comparison of generated schedules, and fast replacement of an unavailable section.
 
-## Project Description
+- [First work session after the PR](docs/project-plan.md#first-work-session-after-the-pr). This names the first shared coding task, what each lead can start, and the targets through November 27.
+- [Start here for the complete project](docs/project-plan.md). Follow a student through the finished app, then read the official feature checklist, 15 use cases, the five proposed leads, and the dated build and presentation plan. The [UI sketches](docs/ui-sketches.md) show how the Swing views will look before and after an action.
+- [Java implementation guide](docs/implementation-guide.md) walks through straightforward Java approaches for section linkage, schedule generation, prerequisites, walking, availability, persistence, and export. The team is using basic Java 17 and Swing.
+- [Course requirements and rubric](docs/project-expectations.md), [Labs 7–9 and project guidance](docs/quercus-project-guide.md), and the [course notes summary](docs/course-notes-summary.md) contain the criteria and technical guidance in searchable text. The [lecture slide guide](docs/course-resources/lecture-slides.md) summarizes four relevant decks with page references. [Source index](docs/course-resources/README.md)
+- [Repository audit](docs/repository-audit.md), [architecture](docs/architecture.md), and [testing guide](docs/testing.md) describe what works on the reviewed baseline, open requirements, and the measured checks.
+- [Timetable data and walking routes](reference/timetable-data/README.md) and the [archived prerequisite rules and evaluator](reference/prerequisites/README.md) support the five planned cases.
 
-### Domain
-Education and student productivity.
+## Team, user stories, and MVP use cases
 
-### Description
-Our project is a Java Swing timetable builder for U of T students. The planned app will let students search for courses, add sections to a weekly timetable, see which meetings overlap, and save and reopen their plans.
+Each proposed lead owns a complete user interaction, including the interactor, controller, presenter, and Swing integration. The [plan](docs/project-plan.md#lead-use-cases) specifies the actor, preconditions, trigger, outcome, main steps, and extensions for each case. The first assignments reflect the Java code already in the repo and give Efe and Leon a clear path to their own feature PRs. Confirm the assignments with the team. [Contribution evidence](docs/repository-audit.md#contribution-evidence-for-assignments)
 
-Work on a branch and open a pull request for review instead of pushing directly
-to `main`.
+| Team member | User story | Proposed lead use case | Starting point |
+| --- | --- | --- | --- |
+| Matthew Chen | As a student, I want to find courses I can add around my existing timetable so I can narrow my choices. | [Find Courses That Fit My Timetable](docs/project-plan.md#uc-05-find-courses-that-fit-my-timetable) | Extend the search and autocomplete stack he built in [PR #1](https://github.com/efeatalay9/207-course-project/pull/1). |
+| Jingyan Lin | As a student, I want to check the prerequisites for an offering so I know what I already satisfy and what I need to verify. | [Check Prerequisites Against My Completed Courses](docs/project-plan.md#uc-07-check-prerequisites-against-my-completed-courses) | Add the academic check to the offering and section selection flow built in [PR #3](https://github.com/efeatalay9/207-course-project/pull/3). |
+| Vincent He | As a student, I want to see the time needed to walk between classes so I can choose sections I can reach on time. | [Check Walking Time Between Classes](docs/project-plan.md#uc-08-check-walking-time-between-classes) | Extend the weekly grid and meeting lookup he built in [PR #7](https://github.com/efeatalay9/207-course-project/pull/7). |
+| Efe Atalay | As a student, I want to compare workable timetables so I can pick a week with fewer awkward gaps. | [Compare Generated Timetables](docs/project-plan.md#uc-11-compare-generated-timetables) | Start the shared schedule check and lead generation and comparison. The catalogue setup is on `main`, and live search is in [draft PR #9](https://github.com/efeatalay9/207-course-project/pull/9). |
+| Leon Ren | As a student, I want to replace a section that fills up so I can recover my saved timetable quickly. | [Replace a Section That Filled Up](docs/project-plan.md#uc-13-replace-a-section-that-filled-up) | Start with a complete [Save and Open Plan](docs/project-plan.md#uc-12-save-and-open-a-plan) feature, then reuse the saved plan for replacement. |
 
-## User Stories
+### Official planning workflows
 
-### 1. Find course sections (Matthew) — Implemented
-As a student, I want to search by course code and see the matching offerings,
-their sections, and their meeting times, so I can choose sections that fit my
-schedule.
+The project plan assigns these workflows to leads and gives each one an acceptance check. All five lead cases above are part of the planned MVP.
 
-The desktop search suggests every matching course code in alphabetical order as
-you type a prefix, ignoring capitalization and surrounding whitespace. Choose a
-code to retrieve all its offerings, labelled by term and campus, with sections,
-meeting times, cancellation status, and unknown-time information. The console
-continues to accept exact full course codes.
+| Area | Planned workflow | Status on the reviewed main branch |
+| --- | --- | --- |
+| Find Courses | Code suggestions, code/title/description search, faculty and session selection, official filters, reset, and result navigation | Exact-code search and suggestions work. Remaining filters and search modes are planned. |
+| Offering details | See academic requirements, section times, delivery, linkage, availability, enrolment controls, locations, and syllabus links. Preview, add, and lock sections. | Basic section information and addition work. Preview, lock, and remaining metadata are planned. |
+| My Timetable | Inspect and remove sections, view either or both terms, block personal time, and diagnose overlaps | Single-session view, interactive grid, and removal are merged. Both-term view, time blocks, and conflict diagnosis are planned. |
+| Course Plan | Build a basket, clear it, and generate using term preferences, fixed sections, and blocked time | Planned |
+| Save, share, and export | Reopen saved work, open a shared link on a second installation, print, and export PDF and PNG | Planned |
 
-Autocomplete uses a distinct, sorted in-memory code index and binary search.
-**The index must remain sorted using the same ordering as binary search.** It is
-built once from the catalogue and kept immutable; see the architecture plan for
-the invariant and complexity. The source JSON does not need to be sorted.
+Reviewed baseline is GitHub `main` at `07ecb4a`, which includes the weekly timetable and removal from [PR #7](https://github.com/efeatalay9/207-course-project/pull/7).
 
-See [the architecture plan](docs/architecture.md) for the agreed responsibilities,
-interfaces, implementation order, and coding conventions.
-
-### 2. Add a section and view its meeting times (Jingyan) — Implemented
-As a student, I want to add a course section and see its scheduled meetings so I can keep track of the sections I’ve chosen.
-
-### 3. View and edit my weekly timetable (Vincent) — Implemented
-
-As a student, I want to see my selected sections on a weekly grid and
-remove sections I no longer want so I can adjust my schedule.
-
-### 4. Check timetable conflicts (someone) - Planned
-
-As a student, I want to see which of my selected meetings overlap and
-when they overlap so I can decide which sections to change.
-
-### 5. something () — 
-
-## Use Cases
-
-### Find course sections
-
-- **Primary actor:** Student.
-- **Precondition:** The course catalogue has loaded.
-- **Trigger:** The student selects a suggested course code or submits a full code.
-- **Success outcome:** The student sees the matching offerings and can inspect
-  their sections and meeting times.
-
-**Main success scenario**
-
-1. The student enters a course code or starts typing its prefix.
-2. The app displays matching course-code suggestions as the student types.
-3. The student selects a suggestion or submits a full course code.
-4. The app displays the matching offerings by term and campus, including their
-   sections, known meeting times, and any cancellation or TBA information.
-
-**Extensions**
-
-- **Step 3 — Blank input:** The app asks the student to enter a course code.
-- **Step 4 — No matching offerings:** The app displays a no-results message.
-- **Step 4 — Catalogue access fails:** The app displays a search error.
-
-### Add a section to the weekly timetable
-
-- **Primary actor:** Student.
-- **Precondition:** The student is viewing the sections for a course offering.
-- **Trigger:** The student selects a section and clicks **Add to Timetable**.
-- **Success outcome:** The section is selected and all its known meeting times
-  appear in the weekly timetable.
-
-**Main success scenario**
-
-1. The student chooses a specific section from the search results.
-2. The student adds the section to their timetable.
-3. The app displays each of the section's scheduled meetings on the "My Timetable panel."
-
-**Extensions**
-
-- If the section is already selected, the app keeps one copy.
-- If a meeting time is TBA, the app shows the section as selected with a
-  **Time TBA** label and leaves it off the timed grid.
-
-### View my weekly timetable (Vincent)
-
-- **Primary actor:** Student.
-- **Precondition:** The course catalogue has loaded.
-- **Trigger:** The student opens the app, adds a section, removes a section, or picks a session.
-- **Success outcome:** Each scheduled meeting for the displayed academic session appears on the correct day and at the correct time.
-
-**Main success scenario**
-
-1. The student looks at the **My Timetable** panel below the search results.
-2. The app looks up every selected section and its meetings in the catalogue.
-3. The app shows the earliest session that has meetings (for example Fall 2026), and draws each
-   meeting as a block on a Monday–Friday grid, labelled with course, section, time, and room.
-4. The student picks another session from the **Session** menu, and the grid redraws for that session.
-
-**Extensions**
-
-- **Step 2 — No selected sections:** The app shows an empty grid and explains how to add a section.
-- **Step 2 — A section has no known meeting times:** The app lists it with **Time TBA** and leaves it off the grid.
-- **Step 2 — A section is no longer in the catalogue:** The app lists it as unavailable instead of hiding it.
-- **Step 2 — The catalogue cannot be read:** The app shows an error instead of a misleadingly empty grid.
-- **Step 3 — A meeting is on a weekend or outside 09:00–18:00:** The grid adds the needed columns or hours.
-- **Step 3 — Meetings overlap:** Blocks are drawn side by side so none is hidden (conflict *checking* is story 4).
-- **Step 3 — A meeting is not weekly:** Its block is labelled *alternate weeks* or *irregular dates*.
-
-### Remove a section from my timetable
-
-- **Primary actor:** Student.
-- **Precondition:** The timetable contains at least one selected section.
-- **Trigger:** The student chooses **Remove** for a selected section.
-- **Success outcome:** The section and all of its meeting blocks disappear from the timetable.
-
-**Main success scenario**
-
-1. The student selects a section they previously added.
-2. The student chooses **Remove**.
-3. The app removes the section and refreshes the weekly grid.
-4. The app confirms, for example "Removed CSC108H1 TUT0101 from your timetable."
-
-**Extensions**
-
-- **Step 1 — The student clicks a block on the grid:** That section is selected in the list.
-- **Step 2 — Nothing is selected:** The app asks the student to choose a section first; nothing changes.
-- **Step 3 — The section is no longer selected:** The app says so and leaves the timetable unchanged.
-
-
-## Minimum Viable Product (MVP)
-| Team member | MVP use case | Status |
-|---|---|---|
-| Matthew | Find course sections | Implemented |
-| Jingyan | Add and remove sections from the weekly timetable | Implemented |
-| Vincent | View the weekly grid and remove a section | Implemented |
-| Person 4 | Check timetable conflicts | Planned |
-(add more later)
+This build combines the live catalogue with validated section addition. Students get visible feedback after adding a section, including when it is already selected, cancelled, missing, or the catalogue is unavailable. Sections with times to be announced can still be planned. [Add Section flow](docs/architecture.md#add-section)
 
 ## Entities
 
-| Entity | Main fields | Relevant behavior |
-|---|---|---|
-| `CourseOffering` | Offering ID, course code, title, campus, term, sections | Provides the sections for a particular offering. |
-| `Section` | Section identifier, teaching type, status, meeting times, linked sections | Provides the meeting times and links for a section. |
-| `MeetingTime` | Day, start time, end time, academic session, recurrence, location | Represents when and where a meeting takes place. |
-| `Timetable` | Selected sections, keyed by offering ID and section name | Adds, removes, and lists selected sections in the order they were added. |
-| `SelectedSection` | Offering ID, section name | Identifies one chosen section; a section name is only unique within its offering. |
+| Entity | Main fields | Behaviour |
+| --- | --- | --- |
+| `CourseOffering` | Offering ID, course code, title, campus, sessions, term, cancellation, sections | `id()`, `sessions()`, and `sections()` identify the offering and give its section choices. |
+| `Section` | Section name, teaching method, cancellation and TBA status, meeting times, linked sections | `name()`, `meetings()`, and `linkedSections()` provide meeting and linkage data within the offering. |
+| `MeetingTime` | Day, start/end, session, recurrence, location | `day()`, `start()`, `end()`, and `session()` describe the meeting's scheduled time. |
+| `SelectedSection` | Offering ID and section name | `offeringId()` and `sectionName()` identify a section in a specific offering. |
+| `Timetable` | Ordered set of selected sections | `addSection()`, `removeSection()`, `contains()`, and `selections()` manage chosen sections. Locks and personal blocks are planned. |
+| `CoursePlan` and `AcademicProfile` | Basket and term preferences. Completed course codes and optional grades. | Planned. Stores generation choices and the local facts used in prerequisite checking. |
 
-## API Usage
-(add notes here)
+## API usage and persistence
 
-## Design Diagrams
-(add notes here)
+The app uses the official U of T Timetable Builder adapter from PR #9. The app loads the current filter choices and fetches courses after the student chooses a term and division and searches. On November 24, the packaged Java code returned one Fall 2026 Arts & Science offering of CSC108H1 with ten sections. The prerequisite prototype uses a separate rules file and evaluates the student's profile locally. [Official Timetable Builder](https://ttb.utoronto.ca/) · [Draft API PR #9](https://github.com/efeatalay9/207-course-project/pull/9) · [Course API flow](docs/implementation-guide.md#catalogue-ingestion-and-search) · [Prerequisite reference](reference/prerequisites/README.md)
 
-## Catalogue data
-
-`uoft-ttb-raw-catalogue-2026-09-05.zip` contains `courses.json`, a catalogue snapshot
-with 8,172 offering records and 7,094 distinct course codes (about 130 MB
-uncompressed). Course codes can appear in multiple offerings. The data is a
-snapshot, not live enrolment information.
-
-## Project status
-
-The first search flow is implemented with a Swing desktop tester, an interactive
-console, a sample catalogue, and automated tests. Timetable editing and conflict
-detection are not implemented yet.
+Save and reopen will use a versioned local plan file. The raw September 5, 2026 catalogue contains 8,172 offerings and 7,094 distinct codes. The walking reference covers all 2,281 within-campus building pairs in that archive. It combines 2,215 official campus map estimates with 66 OpenStreetMap pedestrian routes for 700 University Avenue. Every row has a source and collection date. [Walking file](reference/timetable-data/walking.json) · [Catalogue field mapping and walking provenance](reference/timetable-data/README.md)
 
 ## Run locally
 
-Use **JDK 17 or newer**. Maven is downloaded automatically by the included wrapper;
-the first build needs internet access. Run these commands from the repository:
+Use **JDK 17 or newer**. The Maven wrapper downloads Maven and dependencies on the first uncached build.
 
 ```sh
-./run.sh                 # Desktop search using the supplied real catalogue ZIP
-./run.sh --sample        # Desktop search using small fictional sample data
-./run.sh --console       # Console search using the real catalogue
-./test.sh                # Automated tests using small fixtures
+./run.sh                 # Swing app using the live Timetable Builder
+./run.sh --offline       # Swing app with the supplied catalogue ZIP
+./run.sh --sample        # Swing app with small fictional fixtures
+./run.sh --console       # Exact-code lookup in the terminal
+./test.sh                # JUnit and dependency-direction tests
 ```
 
-On macOS, you can also double-click `Run Course Search.command` to open the app or
-`Run Tests.command` to run the tests; no terminal typing is required. In IntelliJ,
-open `pom.xml` as a Maven project and run the `main` method in
-[`src/main/java/app/Main.java`](src/main/java/app/Main.java) with a JDK of at least
-17. Set the run configuration's working directory to the repository root so it
-can find the supplied catalogue. The console accepts `:quit` to exit. No ZIP
-extraction is needed. Build output and dependency caches are ignored by Git.
+On macOS, open the checkout in Finder and double-click `Run Course Search.command` or `Run Tests.command`. In IntelliJ, open `pom.xml` as a Maven project and run [`app.Main`](src/main/java/app/Main.java) with the repository root as its working directory. The console accepts `:quit`.
 
-Try typing `CSC`, narrowing it to `CSC1`, and choosing a code from the dropdown.
-Use Up/Down and Enter, or click a suggestion; Escape dismisses the dropdown.
-Every match is available by scrolling, with no fixed result-count limit.
-Also try `CSC108H1`, `  csc108h1  `, an unknown code, and a blank search.
-In sample mode, `CSC108H1` deliberately includes two offerings, TBA information,
-an alternate-week tutorial, and a cancelled section. All sample data is fictional.
+## Development and review
 
-See [the testing guide](docs/testing.md) for expected results, custom catalogue
-paths, IDE setup, and troubleshooting.
+Keep application rules behind use-case boundaries. The [search wiring](src/main/java/app/SearchApplication.java) and [Add Section flow](docs/architecture.md#add-section) show how controllers, interactors, presenters, and catalogue adapters connect.
 
-## Code structure and contributions
-
-Production code is in `src/main/java`; automated tests are in `src/test/java`.
-
-| Package | Responsibility |
-| --- | --- |
-| `domain` | Immutable offerings, sections, and meeting times |
-| `usecase` | Search and autocomplete rules, with narrow input/output and catalogue interfaces |
-| `dataaccess.catalog` | JSON/ZIP loading and the indexed in-memory catalogue |
-| `interfaceadapter` | Controllers, presenters, and view models |
-| `view` | Swing and console user interfaces |
-| `app` | Startup and wiring of concrete modules |
-
-[`SearchApplication.connect`](src/main/java/app/SearchApplication.java) accepts
-catalogue and output interfaces. A new data source or visualizer can implement
-those interfaces without changing the search rules. Keep dependencies directed
-toward the domain and use cases, use explicit variable types instead of `var`,
-and add plain-language comments that explain class and method responsibilities.
-See [the architecture plan](docs/architecture.md) before adding a feature.
-
-Run `./test.sh` before requesting review. Tests cover catalogue validation,
-search and autocomplete behavior, presenters, interchangeable implementations,
-and compiled dependency boundaries. For a clean build including the runnable
-JAR, use `./mvnw -B -ntp clean verify`.
+The integration build passes 115 tests with 100% line coverage in the domain and use-case packages. Maven includes the course's Google Checkstyle rules. Use the scoped check for the Java files in a PR and run the full report to see existing findings. [Testing and style commands](docs/testing.md#style-and-coverage-work) · [Code-review guide](docs/code-review.md) · [Dated milestones](docs/project-plan.md#timeline-and-completion-evidence)

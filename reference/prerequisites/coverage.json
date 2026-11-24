@@ -1,0 +1,16 @@
+{
+  "offerings": 8172,
+  "with_published_text": 6352,
+  "compiled": 3632,
+  "none_listed": 1439,
+  "unresolved": 3101,
+  "breakdown": {
+    "compiled": 3632,
+    "missing_field": 370,
+    "none_listed": 1439,
+    "qualifying_note": 385,
+    "unsupported_text": 2346
+  },
+  "bytes": 2128753,
+  "gzip_bytes": 164592
+}
