@@ -1,0 +1,147 @@
+{
+  "records": 8172,
+  "sections": 23733,
+  "meetings": 26548,
+  "textFragments": 39901,
+  "uniqueTextFragments": 16059,
+  "textCharacters": 6030359,
+  "fields": 156,
+  "naturalKeyCollisionGroups": 0,
+  "divisions": {
+    "ARTSC": 3767,
+    "SCAR": 1630,
+    "APSC": 505,
+    "FPEH": 93,
+    "ERIN": 1687,
+    "ARCLA": 120,
+    "MUSIC": 349,
+    "FIS": 21
+  },
+  "sessions": {
+    "20269,20271": 799,
+    "20271": 3732,
+    "20269": 3641
+  },
+  "caseCounts": {
+    "cancelled_section": 430,
+    "no_meetings": 2856,
+    "blank_course_cancel_flag": 2568,
+    "multiple_enrolment_rows": 8341,
+    "overlapping_raw_meetings": 1077,
+    "unknown_building": 1317,
+    "section_subtitle": 1722,
+    "duplicate_meetings": 240,
+    "no_calendar_info": 42,
+    "zero_capacity": 135,
+    "open_limit": 8,
+    "tba_with_meetings": 20,
+    "nonempty_coSec": 76,
+    "variable_credit": 4
+  },
+  "candidateRuleCounts": {
+    "grading_option_or_extra": {
+      "fragments": 902,
+      "offerings": 899
+    },
+    "nonstandard_hours": {
+      "fragments": 144,
+      "offerings": 143
+    },
+    "tests_outside_classes": {
+      "fragments": 1761,
+      "offerings": 1745
+    },
+    "historic_alias_or_equivalence": {
+      "fragments": 468,
+      "offerings": 428
+    },
+    "subject_credit_thresholds": {
+      "fragments": 3063,
+      "offerings": 2713
+    },
+    "audition_placement_permission": {
+      "fragments": 2936,
+      "offerings": 2274
+    },
+    "external_venue_or_travel": {
+      "fragments": 160,
+      "offerings": 159
+    },
+    "aggregate_grades": {
+      "fragments": 369,
+      "offerings": 338
+    },
+    "recency_or_order": {
+      "fragments": 699,
+      "offerings": 593
+    },
+    "registration_workflow": {
+      "fragments": 679,
+      "offerings": 637
+    },
+    "fees_or_cost": {
+      "fragments": 176,
+      "offerings": 176
+    },
+    "mandatory_events": {
+      "fragments": 272,
+      "offerings": 189
+    },
+    "safety_or_nonacademic_requirements": {
+      "fragments": 240,
+      "offerings": 231
+    },
+    "mixed_delivery": {
+      "fragments": 148,
+      "offerings": 142
+    },
+    "topic_or_section_specific": {
+      "fragments": 180,
+      "offerings": 171
+    },
+    "cross_listing": {
+      "fragments": 117,
+      "offerings": 117
+    },
+    "eligibility_upper_bounds": {
+      "fragments": 263,
+      "offerings": 261
+    },
+    "nonweekly_or_short_dates": {
+      "fragments": 654,
+      "offerings": 464
+    },
+    "prior_language_background": {
+      "fragments": 334,
+      "offerings": 211
+    },
+    "external_rule_location": {
+      "fragments": 372,
+      "offerings": 340
+    },
+    "optional_or_choice_attendance": {
+      "fragments": 136,
+      "offerings": 136
+    },
+    "priority_release_or_reservation": {
+      "fragments": 643,
+      "offerings": 450
+    },
+    "cross_course_lab_rules": {
+      "fragments": 55,
+      "offerings": 55
+    },
+    "repeatability_and_credit_caps": {
+      "fragments": 147,
+      "offerings": 147
+    },
+    "concurrency": {
+      "fragments": 122,
+      "offerings": 118
+    },
+    "linked_or_matching_sections": {
+      "fragments": 184,
+      "offerings": 183
+    }
+  }
+}

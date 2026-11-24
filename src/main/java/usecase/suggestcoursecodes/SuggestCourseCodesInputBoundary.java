@@ -2,12 +2,22 @@ package usecase.suggestcoursecodes;
 
 import usecase.common.CatalogueScope;
 
-// Lets input adapters request suggestions without depending on the implementation.
+/** Accepts student input for autocomplete suggestions. */
 public interface SuggestCourseCodesInputBoundary {
-    // Accepts raw text and publishes one response; blank text clears suggestions.
-    void execute(String prefix);
+  /**
+   * Requests suggestions for a course-code prefix.
+   *
+   * @param prefix the raw text, with blank text clearing suggestions
+   */
+  void execute(String prefix);
 
-    default void execute(String prefix, CatalogueScope scope) {
-        execute(prefix);
-    }
+  /**
+   * Requests suggestions for a selected term and division. The default forwards only the prefix.
+   *
+   * @param prefix the raw text
+   * @param scope the selected term and division
+   */
+  default void execute(String prefix, CatalogueScope scope) {
+    execute(prefix);
+  }
 }

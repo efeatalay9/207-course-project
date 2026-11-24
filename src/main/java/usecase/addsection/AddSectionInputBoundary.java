@@ -2,12 +2,10 @@ package usecase.addsection;
 
 /** Defines the action of adding a section to a timetable. */
 public interface AddSectionInputBoundary {
-    /**
-     * Adds the selected section to the timetable.
-     *
-     * @param offeringId the course offering ID
-     * @param sectionName the section name within that offering
-     * @return true if the section was added, or false if it was already selected
-     */
-    boolean execute(String offeringId, String sectionName);
+  /**
+   * Validates the selection, updates the timetable when it can be added, and reports the result.
+   *
+   * @param request the section the student selected
+   */
+  void execute(AddSectionRequest request);
 }

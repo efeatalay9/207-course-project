@@ -1,23 +1,34 @@
 package usecase.searchcourses;
 
+import domain.CourseOffering;
+import java.util.List;
 import usecase.common.CatalogAccessException;
 import usecase.common.CatalogueScope;
 
-import domain.CourseOffering;
-import java.util.List;
-
-// The read-only catalogue port owned by the search use case.
+/** Reads course offerings for exact-code searches. */
 public interface CourseCatalog {
-    // Accepts a trimmed, uppercase full code. Returns all matches, never null.
-    // No matches means an empty list; access failure must throw CatalogAccessException.
-    List<CourseOffering> findByCode(String normalizedCode) throws CatalogAccessException;
+  /**
+   * Looks up a course code in an unscoped catalogue.
+   *
+   * @param normalizedCode the trimmed, uppercase course code
+   * @return all matching offerings, or an empty list when the course is absent
+   * @throws CatalogAccessException if the catalogue cannot fulfill the lookup
+   */
+  List<CourseOffering> findByCode(String normalizedCode) throws CatalogAccessException;
 
-    /** Searches within a selected scope when the catalogue supports remote filtering. */
-    default List<CourseOffering> findByCode(String normalizedCode, CatalogueScope scope)
-            throws CatalogAccessException {
-        if (scope != null) {
-            throw new CatalogAccessException("This catalogue does not support scoped searches.", null);
-        }
-        return findByCode(normalizedCode);
+  /**
+   * Looks up offerings within the selected term and division.
+   *
+   * @param normalizedCode the trimmed, uppercase course code
+   * @param scope the selected term and division, or null for an unscoped lookup
+   * @return all offerings matching the code and scope
+   * @throws CatalogAccessException if the lookup fails or the scope is unsupported
+   */
+  default List<CourseOffering> findByCode(String normalizedCode, CatalogueScope scope)
+      throws CatalogAccessException {
+    if (scope != null) {
+      throw new CatalogAccessException("This catalogue does not support scoped searches.", null);
     }
+    return findByCode(normalizedCode);
+  }
 }

@@ -1,26 +1,40 @@
 package interfaceadapter.searchcourses;
 
+import java.util.Objects;
 import usecase.common.CatalogueScope;
 import usecase.searchcourses.SearchCoursesInputBoundary;
 import usecase.searchcourses.SearchCoursesRequest;
-import java.util.Objects;
 
-// Converts UI actions to use-case requests; validation belongs to the interactor.
+/** Converts course-search actions into input-boundary requests. */
 public final class SearchCoursesController {
-    private final SearchCoursesInputBoundary input;
+  private final SearchCoursesInputBoundary input;
 
-    // Accept any implementation of the input boundary, including test doubles.
-    public SearchCoursesController(SearchCoursesInputBoundary input) {
-        this.input = Objects.requireNonNull(input);
-    }
+  /**
+   * Creates the search controller.
+   *
+   * @param input the boundary that accepts search requests
+   */
+  public SearchCoursesController(SearchCoursesInputBoundary input) {
+    this.input = Objects.requireNonNull(input);
+  }
 
-    // Forward the original input so every UI uses the same normalization rules.
-    public void search(String code) {
-        input.execute(new SearchCoursesRequest(code));
-    }
+  /**
+   * Forwards the text for an offline search.
+   *
+   * @param code the course code as entered by the student
+   */
+  public void search(String code) {
+    input.execute(new SearchCoursesRequest(code));
+  }
 
-    /** Searches one selected term and division from the live catalogue. */
-    public void search(String code, String session, String division) {
-        input.execute(new SearchCoursesRequest(code, new CatalogueScope(session, division)));
-    }
+  /**
+   * Requests a live search within the selected term and division.
+   *
+   * @param code the course code as entered by the student
+   * @param session the selected term code
+   * @param division the selected faculty or division code
+   */
+  public void search(String code, String session, String division) {
+    input.execute(new SearchCoursesRequest(code, new CatalogueScope(session, division)));
+  }
 }

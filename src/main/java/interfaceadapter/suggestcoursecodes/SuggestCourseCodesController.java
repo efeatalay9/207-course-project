@@ -1,25 +1,39 @@
 package interfaceadapter.suggestcoursecodes;
 
+import java.util.Objects;
 import usecase.common.CatalogueScope;
 import usecase.suggestcoursecodes.SuggestCourseCodesInputBoundary;
-import java.util.Objects;
 
-// Forwards typing events through the autocomplete input boundary.
+/** Converts changes to the search field into autocomplete requests. */
 public final class SuggestCourseCodesController {
-    private final SuggestCourseCodesInputBoundary input;
+  private final SuggestCourseCodesInputBoundary input;
 
-    // The concrete interactor is selected in the composition root.
-    public SuggestCourseCodesController(SuggestCourseCodesInputBoundary input) {
-        this.input = Objects.requireNonNull(input);
-    }
+  /**
+   * Creates the autocomplete controller.
+   *
+   * @param input the boundary that accepts suggestion requests
+   */
+  public SuggestCourseCodesController(SuggestCourseCodesInputBoundary input) {
+    this.input = Objects.requireNonNull(input);
+  }
 
-    // Preserve raw text; normalization remains a use-case responsibility.
-    public void suggest(String prefix) {
-        input.execute(prefix);
-    }
+  /**
+   * Requests suggestions from the offline catalogue.
+   *
+   * @param prefix the unmodified text in the search field
+   */
+  public void suggest(String prefix) {
+    input.execute(prefix);
+  }
 
-    /** Finds live suggestions within the selected term and division. */
-    public void suggest(String prefix, String session, String division) {
-        input.execute(prefix, new CatalogueScope(session, division));
-    }
+  /**
+   * Requests live suggestions within a selected term and division.
+   *
+   * @param prefix the unmodified text in the search field
+   * @param session the selected term code
+   * @param division the selected faculty or division code
+   */
+  public void suggest(String prefix, String session, String division) {
+    input.execute(prefix, new CatalogueScope(session, division));
+  }
 }
