@@ -7,7 +7,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class InMemoryOfferingLookupTest {
     @Test
-    void findsOfferingsByIdAndReportsMissingOnes() throws Exception {
+    void findsOfferingsByIdAndReportsMissingOnes() {
         InMemoryOfferingLookup lookup = new InMemoryOfferingLookup(List.of(
                 CatalogFixtures.offering("fall", "CSC108H1", "20269"),
                 CatalogFixtures.offering("winter", "CSC108H1", "20271")));
