@@ -22,7 +22,7 @@ and walking time, comparison of generated schedules, and fast replacement of an 
 
 ### 1. Find course sections (Matthew) — Implemented
 As a student, I want to search by course code and see the matching offerings, their sections, and their meeting times, 
-so I can choose sections that fit myschedule.
+so I can choose sections that fit my schedule.
 
 ### 2. Add a section and view its meeting times (Jingyan) — Implemented
 As a student, I want to add a course section and see its scheduled meetings so I can keep track of the sections I’ve 
@@ -40,7 +40,7 @@ when they overlap so I can decide which sections to change.
 
 ## Use Cases
 
-### Find course sections
+### Find course sections (User story #1)
 
 - **Primary actor:** Student.
 - **Precondition:** The course catalogue has loaded.
@@ -62,7 +62,7 @@ when they overlap so I can decide which sections to change.
 - **Step 4 — No matching offerings:** The app displays a no-results message.
 - **Step 4 — Catalogue access fails:** The app displays a search error.
 
-### Add a section to the weekly timetable
+### Add a section to the weekly timetable (User story #2)
 
 - **Primary actor:** Student.
 - **Precondition:** The student is viewing the sections for a course offering.
@@ -82,7 +82,7 @@ when they overlap so I can decide which sections to change.
 - If a meeting time is TBA, the app shows the section as selected with a
   **Time TBA** label and leaves it off the timed grid.
 
-### Review my weekly timetable
+### Review my weekly timetable (User story #3)
 
 - **Primary actor:** Student.
 - **Trigger:** The student opens the weekly timetable.
@@ -98,7 +98,7 @@ when they overlap so I can decide which sections to change.
 - If there are no selected sections, the app shows an empty grid.
 - If a selected section has no knokwn meeting times, the app lists it separately as **Time TBA**
 
-### Remove a section from my timetable
+### Remove a section from my timetable (User story #3)
 
 - **Primary actor:** Student.
 - **Precondition:** The timetable contains at least one selected section.
