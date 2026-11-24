@@ -32,7 +32,7 @@ public final class SearchCoursesInteractor implements SearchCoursesInputBoundary
 
         List<CourseOffering> matches;
         try {
-            matches = catalog.findByCode(code);
+            matches = catalog.findByCode(code, request.scope());
         } catch (CatalogAccessException exception) {
             output.present(new SearchCoursesResponse(SearchCoursesResponse.Outcome.CATALOGUE_FAILURE,
                     code, List.of()));

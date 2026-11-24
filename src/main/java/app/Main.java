@@ -4,6 +4,7 @@ import dataaccess.catalog.CatalogLoadException;
 import dataaccess.catalog.InMemoryCourseCatalog;
 import dataaccess.catalog.InMemoryOfferingLookup;
 import dataaccess.catalog.JsonCatalogLoader;
+import dataaccess.catalog.TtbCourseCatalog;
 import domain.CourseOffering;
 import domain.Timetable;
 import interfaceadapter.addsection.AddSectionController;
@@ -22,7 +23,11 @@ import view.ConsoleSearchView;
 import view.SearchView;
 import view.WeeklyTimetablePanel;
 import usecase.addsection.AddSectionInteractor;
+import usecase.common.CatalogAccessException;
 import usecase.removesection.RemoveSectionInteractor;
+import usecase.searchcourses.CourseCatalog;
+import usecase.suggestcoursecodes.CourseCodeIndex;
+import usecase.viewtimetable.OfferingLookup;
 import usecase.viewtimetable.ViewTimetableInteractor;
 import java.awt.GraphicsEnvironment;
 import java.io.IOException;
@@ -63,11 +68,13 @@ public final class Main {
         }
         if (options.help()) {
             output.println("Course search (Java 17+)\n"
+                    + "  --offline         Use the bundled catalogue snapshot\n"
                     + "  --sample          Use the small fictional test catalogue\n"
                     + "  --catalog PATH    Use a JSON file or ZIP containing courses.json\n"
                     + "  --console         Run an interactive console instead of the desktop window\n"
                     + "  --help            Show this help\n"
-                    + "Default catalogue: " + DEFAULT_CATALOGUE);
+                    + "The desktop uses the official Timetable Builder by default.\n"
+                    + "The offline and console default catalogue is " + DEFAULT_CATALOGUE);
             output.flush();
             return 0;
         }
@@ -76,52 +83,76 @@ public final class Main {
             errors.flush();
             return 2;
         }
-        String source = options.sample() ? "SAMPLE DATA — fictional offerings for testing"
-                : "Catalogue: " + options.catalogue();
-        output.println("Loading " + source + " ...");
-        output.flush();
         try {
+            if (options.live()) {
+                output.println("Loading term and division choices from the Timetable Builder...");
+                output.flush();
+                TtbCourseCatalog catalog = new TtbCourseCatalog();
+                TtbCourseCatalog.Filters filters = catalog.fetchFilters();
+                SearchView.Filters choices = new SearchView.Filters(
+                        filters.sessions().stream().map(Main::filterChoice).toList(),
+                        filters.divisions().stream().map(Main::filterChoice).toList());
+                display(catalog, catalog, catalog, choices, "Live catalogue: U of T Timetable Builder",
+                        false, input, output);
+                return 0;
+            }
+            String source = options.sample() ? "SAMPLE DATA — fictional offerings for testing"
+                    : "Catalogue: " + options.catalogue();
+            output.println("Loading " + source + " ...");
+            output.flush();
             List<CourseOffering> offerings = load(options);
             InMemoryCourseCatalog catalog = new InMemoryCourseCatalog(offerings);
-            SearchCoursesViewModel viewModel = new SearchCoursesViewModel();
-            SearchCoursesPresenter presenter = new SearchCoursesPresenter(viewModel);
-            SuggestCourseCodesViewModel suggestionsModel = new SuggestCourseCodesViewModel();
-            SuggestCourseCodesPresenter suggestionsPresenter = new SuggestCourseCodesPresenter(suggestionsModel);
-            SearchApplication application = SearchApplication.connect(catalog, catalog, presenter, suggestionsPresenter);
-            SearchCoursesController controller = new SearchCoursesController(application.search());
             output.println("Loaded " + offerings.size() + " offerings. Catalogue data is a snapshot, not live enrolment.");
             output.flush();
-            if (options.console()) {
-                new ConsoleSearchView(controller, viewModel, input, output).run();
-            } else {
-                SuggestCourseCodesController suggestions = new SuggestCourseCodesController(application.suggestions());
-                Timetable timetable = new Timetable();
-                AddSectionInteractor addSectionInteractor = new AddSectionInteractor(timetable);
-                AddSectionController addSectionController = new AddSectionController(addSectionInteractor);
-                // View and remove share the timetable with add, and one view model for the grid panel.
-                TimetableViewModel timetableModel = new TimetableViewModel();
-                ViewTimetableController viewTimetableController = new ViewTimetableController(
-                        new ViewTimetableInteractor(timetable, new InMemoryOfferingLookup(offerings),
-                                new ViewTimetablePresenter(timetableModel)));
-                RemoveSectionController removeSectionController = new RemoveSectionController(
-                        new RemoveSectionInteractor(timetable, new RemoveSectionPresenter(timetableModel)));
-                SwingUtilities.invokeLater(() -> {
-                    WeeklyTimetablePanel timetablePanel = new WeeklyTimetablePanel(
-                            viewTimetableController, removeSectionController, timetableModel);
-                    SearchView desktopView = new SearchView(controller, viewModel, suggestions, suggestionsModel,
-                            source, addSectionController, timetablePanel);
-                    desktopView.show();
-                    output.println("Desktop search window opened. Type CSC to try the course-code dropdown.");
-                    output.flush();
-                });
-            }
+            display(catalog, catalog, new InMemoryOfferingLookup(offerings), null, source, options.console(),
+                    input, output);
             return 0;
-        } catch (CatalogLoadException | IOException exception) {
+        } catch (CatalogLoadException | CatalogAccessException | IOException exception) {
             errors.println("Could not start course search: " + exception.getMessage());
-            errors.println("Check the catalogue path and format, or use --sample to test the application.");
+            if (options.live()) {
+                errors.println("Check your connection or run with --offline to use the bundled snapshot.");
+            } else {
+                errors.println("Check the catalogue path and format, or use --sample to test the application.");
+            }
             errors.flush();
             return 1;
         }
+    }
+
+    private static SearchView.FilterChoice filterChoice(TtbCourseCatalog.Option option) {
+        return new SearchView.FilterChoice(option.code(), option.label());
+    }
+
+    private static void display(CourseCatalog catalog, CourseCodeIndex index, OfferingLookup offeringLookup,
+                                SearchView.Filters filters, String source, boolean console, Reader input,
+                                PrintWriter output) throws IOException {
+        SearchCoursesViewModel viewModel = new SearchCoursesViewModel();
+        SearchCoursesPresenter presenter = new SearchCoursesPresenter(viewModel);
+        SuggestCourseCodesViewModel suggestionsModel = new SuggestCourseCodesViewModel();
+        SuggestCourseCodesPresenter suggestionsPresenter = new SuggestCourseCodesPresenter(suggestionsModel);
+        SearchApplication application = SearchApplication.connect(catalog, index, presenter, suggestionsPresenter);
+        SearchCoursesController controller = new SearchCoursesController(application.search());
+        if (console) {
+            new ConsoleSearchView(controller, viewModel, input, output).run();
+            return;
+        }
+        SuggestCourseCodesController suggestions = new SuggestCourseCodesController(application.suggestions());
+        Timetable timetable = new Timetable();
+        AddSectionController add = new AddSectionController(new AddSectionInteractor(timetable));
+        // View and remove share the timetable with add, and one view model for the grid panel.
+        TimetableViewModel timetableModel = new TimetableViewModel();
+        ViewTimetableController viewTimetable = new ViewTimetableController(
+                new ViewTimetableInteractor(timetable, offeringLookup, new ViewTimetablePresenter(timetableModel)));
+        RemoveSectionController remove = new RemoveSectionController(
+                new RemoveSectionInteractor(timetable, new RemoveSectionPresenter(timetableModel)));
+        SwingUtilities.invokeLater(() -> {
+            WeeklyTimetablePanel timetablePanel = new WeeklyTimetablePanel(viewTimetable, remove, timetableModel);
+            SearchView desktopView = new SearchView(controller, viewModel, suggestions, suggestionsModel,
+                    source, add, timetablePanel, filters);
+            desktopView.show();
+            output.println("Desktop search window opened.");
+            output.flush();
+        });
     }
 
     // Sample data is bundled in the JAR; real data is read directly from its existing ZIP.
@@ -140,18 +171,20 @@ public final class Main {
     }
 
     // Startup options are separate from search requests and do not enter the use case.
-    private record LaunchOptions(boolean console, boolean sample, boolean help, Path catalogue) {
+    private record LaunchOptions(boolean console, boolean sample, boolean help, boolean live, Path catalogue) {
         // Reject conflicting data sources and unknown arguments instead of silently ignoring them.
         static LaunchOptions parse(String[] args) {
             boolean console = false;
             boolean sample = false;
             boolean help = false;
+            boolean offline = false;
             Path catalogue = null;
             for (int i = 0; i < args.length; i++) {
                 switch (args[i]) {
                     case "--console" -> console = true;
                     case "--sample" -> sample = true;
                     case "--help" -> help = true;
+                    case "--offline" -> offline = true;
                     case "--catalog" -> {
                         if (++i >= args.length || args[i].startsWith("--") || catalogue != null) {
                             throw new IllegalArgumentException("Supply one path after --catalog.");
@@ -161,10 +194,11 @@ public final class Main {
                     default -> throw new IllegalArgumentException("Unknown option: " + args[i]);
                 }
             }
-            if (sample && catalogue != null) {
-                throw new IllegalArgumentException("Choose either --sample or --catalog, not both.");
+            int sourceOptions = (sample ? 1 : 0) + (offline ? 1 : 0) + (catalogue == null ? 0 : 1);
+            if (sourceOptions > 1) {
+                throw new IllegalArgumentException("Choose one of --offline, --sample, or --catalog.");
             }
-            return new LaunchOptions(console, sample, help,
+            return new LaunchOptions(console, sample, help, !console && sourceOptions == 0,
                     catalogue == null ? Path.of(DEFAULT_CATALOGUE) : catalogue);
         }
     }

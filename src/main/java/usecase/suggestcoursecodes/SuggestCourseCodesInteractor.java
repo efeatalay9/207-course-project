@@ -1,6 +1,7 @@
 package usecase.suggestcoursecodes;
 
 import usecase.common.CatalogAccessException;
+import usecase.common.CatalogueScope;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
@@ -19,6 +20,11 @@ public final class SuggestCourseCodesInteractor implements SuggestCourseCodesInp
     // Use the same normalization as exact search, without querying storage for blank input.
     @Override
     public void execute(String prefix) {
+        execute(prefix, null);
+    }
+
+    @Override
+    public void execute(String prefix, CatalogueScope scope) {
         String normalized = prefix == null ? "" : prefix.strip().toUpperCase(Locale.ROOT);
         if (normalized.isEmpty()) {
             output.present(new SuggestCourseCodesResponse(List.of(), false));
@@ -26,7 +32,7 @@ public final class SuggestCourseCodesInteractor implements SuggestCourseCodesInp
         }
         List<String> codes;
         try {
-            codes = index.findCodesByPrefix(normalized);
+            codes = index.findCodesByPrefix(normalized, scope);
         } catch (CatalogAccessException exception) {
             output.present(new SuggestCourseCodesResponse(List.of(), true));
             return;

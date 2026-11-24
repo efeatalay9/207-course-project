@@ -1,5 +1,6 @@
 package interfaceadapter.suggestcoursecodes;
 
+import usecase.common.CatalogueScope;
 import usecase.suggestcoursecodes.SuggestCourseCodesInputBoundary;
 import java.util.Objects;
 
@@ -15,5 +16,10 @@ public final class SuggestCourseCodesController {
     // Preserve raw text; normalization remains a use-case responsibility.
     public void suggest(String prefix) {
         input.execute(prefix);
+    }
+
+    /** Finds live suggestions within the selected term and division. */
+    public void suggest(String prefix, String session, String division) {
+        input.execute(prefix, new CatalogueScope(session, division));
     }
 }

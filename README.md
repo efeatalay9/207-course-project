@@ -166,14 +166,26 @@ when they overlap so I can decide which sections to change.
 | `SelectedSection` | Offering ID, section name | Identifies one chosen section; a section name is only unique within its offering. |
 
 ## API Usage
-(add notes here)
+
+The desktop app reads public data directly from the [U of T Timetable Builder](https://ttb.utoronto.ca/).
+Startup reads only the term and division options from the
+[reference-data endpoint](https://api.easi.utoronto.ca/ttb/reference-data).
+Select a term and division before searching. The adapter sends those selections
+with the requested course code to the timetable's paged search. The same scope
+applies to code suggestions. Only courses returned by a completed search are
+kept for the weekly grid. The catalogue calls send filter and search text.
+Student academic records and prerequisite evaluation are separate work.
+
+On November 24, 2026 the Java client returned one CSC108H1 offering and ten
+sections for Fall 2026 and Arts & Science. The same code scoped to Scarborough
+returned no matches.
 
 ## Design Diagrams
 (add notes here)
 
 ## Catalogue data
 
-`uoft-ttb-raw-catalogue-2026-09-05.zip` contains `courses.json`, a catalogue snapshot
+For offline use, `uoft-ttb-raw-catalogue-2026-09-05.zip` contains `courses.json`, a catalogue snapshot
 with 8,172 offering records and 7,094 distinct course codes (about 130 MB
 uncompressed). Course codes can appear in multiple offerings. The data is a
 snapshot, not live enrolment information.
@@ -190,9 +202,10 @@ Use **JDK 17 or newer**. Maven is downloaded automatically by the included wrapp
 the first build needs internet access. Run these commands from the repository:
 
 ```sh
-./run.sh                 # Desktop search using the supplied real catalogue ZIP
+./run.sh                 # Desktop search using the official Timetable Builder
+./run.sh --offline       # Desktop search with the bundled catalogue snapshot
 ./run.sh --sample        # Desktop search using small fictional sample data
-./run.sh --console       # Console search using the real catalogue
+./run.sh --console       # Console search using the bundled snapshot
 ./test.sh                # Automated tests using small fixtures
 ```
 
@@ -204,10 +217,11 @@ open `pom.xml` as a Maven project and run the `main` method in
 can find the supplied catalogue. The console accepts `:quit` to exit. No ZIP
 extraction is needed. Build output and dependency caches are ignored by Git.
 
-Try typing `CSC`, narrowing it to `CSC1`, and choosing a code from the dropdown.
-Use Up/Down and Enter, or click a suggestion; Escape dismisses the dropdown.
-Every match is available by scrolling, with no fixed result-count limit.
-Also try `CSC108H1`, `  csc108h1  `, an unknown code, and a blank search.
+In live mode, choose a term and division first. Type three or more characters
+for suggestions, or enter a full course code and click Search. If the service is
+unavailable, retry the search or launch with `--offline`. In either mode, use
+Up/Down and Enter or click a suggestion. Escape dismisses the dropdown.
+Try `CSC108H1`, `  csc108h1  `, an unknown code, and a blank search.
 In sample mode, `CSC108H1` deliberately includes two offerings, TBA information,
 an alternate-week tutorial, and a cancelled section. All sample data is fictional.
 
@@ -222,7 +236,7 @@ Production code is in `src/main/java`; automated tests are in `src/test/java`.
 | --- | --- |
 | `domain` | Immutable offerings, sections, and meeting times |
 | `usecase` | Search and autocomplete rules, with narrow input/output and catalogue interfaces |
-| `dataaccess.catalog` | JSON/ZIP loading and the indexed in-memory catalogue |
+| `dataaccess.catalog` | Live timetable requests and mapping, plus JSON/ZIP loading and offline indexing |
 | `interfaceadapter` | Controllers, presenters, and view models |
 | `view` | Swing and console user interfaces |
 | `app` | Startup and wiring of concrete modules |

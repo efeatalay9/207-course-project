@@ -10,6 +10,9 @@ import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.function.Supplier;
 import javax.swing.AbstractAction;
 import javax.swing.BorderFactory;
 import javax.swing.DefaultListModel;
@@ -20,6 +23,8 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextField;
 import javax.swing.KeyStroke;
 import javax.swing.ListSelectionModel;
+import javax.swing.SwingWorker;
+import javax.swing.Timer;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 
@@ -36,15 +41,23 @@ final class CourseCodeDropdown {
     private final JList<String> choices = new JList<>(codes);
     private final JScrollPane scroll = new JScrollPane(choices);
     private final JLabel status = new JLabel();
+    private final Supplier<SearchView.Selection> scope;
+    private final Timer delay = new Timer(300, event -> loadLiveSuggestions());
     private boolean acceptingSelection;
+    private boolean loadingSuggestions;
+    private boolean queuedSuggestions;
+    private int inputVersion;
 
     // Attach to an existing field so its accessible label and normal editing still work.
     CourseCodeDropdown(JTextField field, SuggestCourseCodesController controller,
-                       SuggestCourseCodesViewModel viewModel, Runnable search) {
+                       SuggestCourseCodesViewModel viewModel, Runnable search,
+                       Supplier<SearchView.Selection> scope) {
         this.field = field;
         this.controller = controller;
         this.viewModel = viewModel;
         this.search = search;
+        this.scope = scope;
+        delay.setRepeats(false);
         configurePopup();
         field.getDocument().addDocumentListener(new DocumentListener() {
             @Override public void insertUpdate(DocumentEvent event) { refresh(); }
@@ -52,11 +65,11 @@ final class CourseCodeDropdown {
             @Override public void changedUpdate(DocumentEvent event) { refresh(); }
         });
         field.addFocusListener(new FocusAdapter() {
-            @Override public void focusLost(FocusEvent event) { popup.setVisible(false); }
+            @Override public void focusLost(FocusEvent event) { dismiss(); }
         });
         bind("DOWN", "next-course", () -> moveSelection(1));
         bind("UP", "previous-course", () -> moveSelection(-1));
-        bind("ESCAPE", "dismiss-courses", () -> popup.setVisible(false));
+        bind("ESCAPE", "dismiss-courses", this::dismiss);
     }
 
     // Enter accepts the highlighted suggestion; without an open list it searches raw input.
@@ -64,7 +77,7 @@ final class CourseCodeDropdown {
         if (popup.isVisible() && choices.getSelectedIndex() >= 0) {
             acceptSelection();
         } else {
-            popup.setVisible(false);
+            dismiss();
             search.run();
         }
     }
@@ -101,10 +114,69 @@ final class CourseCodeDropdown {
         if (acceptingSelection) {
             return;
         }
+        if (scope != null) {
+            dismiss();
+            if (field.hasFocus() && field.getText().strip().length() >= 3 && scope.get().complete()) {
+                delay.restart();
+            }
+            return;
+        }
         controller.suggest(field.getText());
+        showSuggestions(viewModel.state());
+    }
+
+    void dismiss() {
+        popup.setVisible(false);
+        delay.stop();
+        queuedSuggestions = false;
+        inputVersion++;
+    }
+
+    // Keep a single live lookup active and ignore its result after a newer edit or search.
+    private void loadLiveSuggestions() {
+        if (loadingSuggestions) {
+            queuedSuggestions = true;
+            return;
+        }
+        SearchView.Selection selection = scope.get();
+        String prefix = field.getText();
+        if (!field.hasFocus() || !selection.complete() || prefix.strip().length() < 3) {
+            return;
+        }
+        int lookupVersion = inputVersion;
+        loadingSuggestions = true;
+        new SwingWorker<SuggestCourseCodesViewModel.State, Void>() {
+            @Override
+            protected SuggestCourseCodesViewModel.State doInBackground() {
+                controller.suggest(prefix, selection.session(), selection.division());
+                return viewModel.state();
+            }
+
+            @Override
+            protected void done() {
+                loadingSuggestions = false;
+                if (lookupVersion == inputVersion && field.hasFocus()) {
+                    try {
+                        showSuggestions(get());
+                    } catch (InterruptedException exception) {
+                        Thread.currentThread().interrupt();
+                    } catch (ExecutionException exception) {
+                        showSuggestions(new SuggestCourseCodesViewModel.State(List.of(),
+                                "Suggestions are unavailable. Enter a full course code."));
+                    }
+                }
+                if (queuedSuggestions) {
+                    queuedSuggestions = false;
+                    loadLiveSuggestions();
+                }
+            }
+        }.execute();
+    }
+
+    private void showSuggestions(SuggestCourseCodesViewModel.State state) {
         codes.clear();
-        codes.addAll(viewModel.state().codes());
-        status.setText(viewModel.state().message());
+        codes.addAll(state.codes());
+        status.setText(state.message());
         scroll.setVisible(!codes.isEmpty());
         if (!codes.isEmpty()) {
             choices.setSelectedIndex(0);
@@ -157,7 +229,7 @@ final class CourseCodeDropdown {
         } finally {
             acceptingSelection = false;
         }
-        popup.setVisible(false);
+        dismiss();
         search.run();
         field.requestFocusInWindow();
     }
