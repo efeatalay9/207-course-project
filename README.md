@@ -1,19 +1,117 @@
 # U of T Timetable Builder
 
+## Team Information
+
+### Team Members
+- Matthew Chen
+- Efe Atalay
+- Jingyan Lin
+- Vincent He
+- Leon Ren
+
+## Project Description
+
 **Domain:** Education and student productivity.
 
-This CSC207 Java Swing project helps U of T students browse courses, plan a weekly timetable, and prepare alternatives for enrolment. The target includes the official builder's planning workflows plus checks for course fit, prerequisites and walking time, comparison of generated schedules, and fast replacement of an unavailable section.
+### Description
+This CSC207 Java Swing project helps U of T students browse courses, plan a weekly timetable, and prepare alternatives 
+for enrolment. The target includes the official builder's planning workflows plus checks for course fit, prerequisites 
+and walking time, comparison of generated schedules, and fast replacement of an unavailable section.
 
-- [First work session after the PR](docs/project-plan.md#first-work-session-after-the-pr). This names the first shared coding task, what each lead can start, and the targets through November 27.
-- [Start here for the complete project](docs/project-plan.md). Follow a student through the finished app, then read the official feature checklist, 15 use cases, the five proposed leads, and the dated build and presentation plan. The [UI sketches](docs/ui-sketches.md) show how the Swing views will look before and after an action.
-- [Java implementation guide](docs/implementation-guide.md) walks through straightforward Java approaches for section linkage, schedule generation, prerequisites, walking, availability, persistence, and export. The team is using basic Java 17 and Swing.
-- [Course requirements and rubric](docs/project-expectations.md), [Labs 7–9 and project guidance](docs/quercus-project-guide.md), and the [course notes summary](docs/course-notes-summary.md) contain the criteria and technical guidance in searchable text. The [lecture slide guide](docs/course-resources/lecture-slides.md) summarizes four relevant decks with page references. [Source index](docs/course-resources/README.md)
-- [Repository audit](docs/repository-audit.md), [architecture](docs/architecture.md), and [testing guide](docs/testing.md) describe what works on the reviewed baseline, open requirements, and the measured checks.
-- [Timetable data and walking routes](reference/timetable-data/README.md) and the [archived prerequisite rules and evaluator](reference/prerequisites/README.md) support the five planned cases.
+## User Stories
 
-## Team, user stories, and MVP use cases
+### 1. Find course sections (Matthew) — Implemented
+As a student, I want to search by course code and see the matching offerings, their sections, and their meeting times, 
+so I can choose sections that fit myschedule.
 
-Each proposed lead owns a complete user interaction, including the interactor, controller, presenter, and Swing integration. The [plan](docs/project-plan.md#lead-use-cases) specifies the actor, preconditions, trigger, outcome, main steps, and extensions for each case. The first assignments reflect the Java code already in the repo and give Efe and Leon a clear path to their own feature PRs. Confirm the assignments with the team. [Contribution evidence](docs/repository-audit.md#contribution-evidence-for-assignments)
+### 2. Add a section and view its meeting times (Jingyan) — Implemented
+As a student, I want to add a course section and see its scheduled meetings so I can keep track of the sections I’ve 
+chosen.
+
+### 3. View and edit my weekly timetable (Vincent) - In Progress
+
+As a student, I want to see my selected sections on a weekly grid andremove sections I no longer want so I can adjust my 
+schedule.
+
+### 4. Check timetable conflicts (someone) - Planned
+
+As a student, I want to see which of my selected meetings overlap and
+when they overlap so I can decide which sections to change.
+
+## Use Cases
+
+### Find course sections
+
+- **Primary actor:** Student.
+- **Precondition:** The course catalogue has loaded.
+- **Trigger:** The student selects a suggested course code or submits a full code.
+- **Success outcome:** The student sees the matching offerings and can inspect
+  their sections and meeting times.
+
+**Main success scenario**
+
+1. The student enters a course code or starts typing its prefix.
+2. The app displays matching course-code suggestions as the student types.
+3. The student selects a suggestion or submits a full course code.
+4. The app displays the matching offerings by term and campus, including their
+   sections, known meeting times, and any cancellation or TBA information.
+
+**Extensions**
+
+- **Step 3 — Blank input:** The app asks the student to enter a course code.
+- **Step 4 — No matching offerings:** The app displays a no-results message.
+- **Step 4 — Catalogue access fails:** The app displays a search error.
+
+### Add a section to the weekly timetable
+
+- **Primary actor:** Student.
+- **Precondition:** The student is viewing the sections for a course offering.
+- **Trigger:** The student selects a section and clicks **Add to Timetable**.
+- **Success outcome:** The section is selected and all its known meeting times
+  appear in the weekly timetable.
+
+**Main success scenario**
+
+1. The student chooses a specific section from the search results.
+2. The student adds the section to their timetable.
+3. The app displays each of the section's scheduled meetings on the "My Timetable panel."
+
+**Extensions**
+
+- If the section is already selected, the app keeps one copy.
+- If a meeting time is TBA, the app shows the section as selected with a
+  **Time TBA** label and leaves it off the timed grid.
+
+### Review my weekly timetable
+
+- **Primary actor:** Student.
+- **Trigger:** The student opens the weekly timetable.
+- **Success outcome:** Each scheduled meeting for the displayed academic session appears on the correct day and at the correct time.
+
+**Main success scenario**
+
+1. The student opens the weekly timetable.
+2. The app displays the meetings for the selected sections on the weekly grid.
+
+**Extensions**
+
+- If there are no selected sections, the app shows an empty grid.
+- If a selected section has no knokwn meeting times, the app lists it separately as **Time TBA**
+
+### Remove a section from my timetable
+
+- **Primary actor:** Student.
+- **Precondition:** The timetable contains at least one selected section.
+- **Trigger:** The student chooses **Remove** for a selected section.
+- **Success outcome:** The section and all of its meeting blocks disappear from the timetable.
+
+**Main success scenario**
+
+1. The student selects a section they previously added.
+2. The student chooses **Remove**.
+3. The app removes the section and refreshes the weekly grid.
+
+## EXTRA ADDITION TO UOFT TTB: Team, user stories, and MVP use cases
 
 | Team member | User story | Proposed lead use case | Starting point |
 | --- | --- | --- | --- |
@@ -55,6 +153,8 @@ This build combines the live catalogue with validated section addition. Students
 The app uses the official U of T Timetable Builder adapter from PR #9. The app loads the current filter choices and fetches courses after the student chooses a term and division and searches. On November 24, the packaged Java code returned one Fall 2026 Arts & Science offering of CSC108H1 with ten sections. The prerequisite prototype uses a separate rules file and evaluates the student's profile locally. [Official Timetable Builder](https://ttb.utoronto.ca/) · [Draft API PR #9](https://github.com/efeatalay9/207-course-project/pull/9) · [Course API flow](docs/implementation-guide.md#catalogue-ingestion-and-search) · [Prerequisite reference](reference/prerequisites/README.md)
 
 Save and reopen will use a versioned local plan file. The raw September 5, 2026 catalogue contains 8,172 offerings and 7,094 distinct codes. The walking reference covers all 2,281 within-campus building pairs in that archive. It combines 2,215 official campus map estimates with 66 OpenStreetMap pedestrian routes for 700 University Avenue. Every row has a source and collection date. [Walking file](reference/timetable-data/walking.json) · [Catalogue field mapping and walking provenance](reference/timetable-data/README.md)
+
+## Design Diagrams
 
 ## Run locally
 
