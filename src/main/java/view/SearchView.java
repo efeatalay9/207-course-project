@@ -35,19 +35,21 @@ public final class SearchView {
     private final JTextField codeField = new JTextField(22);
     private final JLabel heading = new JLabel();
     private final JTextArea results = new JTextArea();
-    private final JTextArea timetableText = new JTextArea(6, 30);
+    private final WeeklyTimetablePanel timetablePanel;
     private final DefaultListModel<SectionChoice> sectionChoices = new DefaultListModel<>();
     private final JList<SectionChoice> sectionList = new JList<>(sectionChoices);
 
     // Construct on Swing's event thread; catalogue loading has already finished in Main.
     public SearchView(SearchCoursesController controller, SearchCoursesViewModel viewModel,
                       SuggestCourseCodesController suggestions, SuggestCourseCodesViewModel suggestionsModel,
-                      String sourceDescription, AddSectionController addSectionController) {
+                      String sourceDescription, AddSectionController addSectionController,
+                      WeeklyTimetablePanel timetablePanel) {
         if (!SwingUtilities.isEventDispatchThread()) {
             throw new IllegalStateException("Create the search view on Swing's event thread.");
         }
         this.controller = controller;
         this.addSectionController = addSectionController;
+        this.timetablePanel = timetablePanel;
         this.viewModel = viewModel;
         dropdown = new CourseCodeDropdown(codeField, suggestions, suggestionsModel, this::search);
         JPanel content = new JPanel(new BorderLayout(12, 12));
@@ -56,8 +58,8 @@ public final class SearchView {
         content.add(resultPanel(), BorderLayout.CENTER);
         frame.setContentPane(content);
         frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        frame.setMinimumSize(new Dimension(650, 450));
-        frame.setSize(980, 720);
+        frame.setMinimumSize(new Dimension(800, 600));
+        frame.setSize(1200, 900);
         frame.setLocationRelativeTo(null);
         render();
     }
@@ -129,11 +131,10 @@ public final class SearchView {
 
         JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, new JScrollPane(results), sectionsPanel);
         split.setResizeWeight(0.65);
-        panel.add(split, BorderLayout.CENTER);
-        timetableText.setEditable(false);
-        JScrollPane timetableScroll = new JScrollPane(timetableText);
-        timetableScroll.setBorder(BorderFactory.createTitledBorder("My Timetable"));
-        panel.add(timetableScroll, BorderLayout.SOUTH);
+        // Search results on top, the weekly timetable below; the divider can be dragged.
+        JSplitPane vertical = new JSplitPane(JSplitPane.VERTICAL_SPLIT, split, timetablePanel);
+        vertical.setResizeWeight(0.4);
+        panel.add(vertical, BorderLayout.CENTER);
 
         return panel;
     }
@@ -148,9 +149,8 @@ public final class SearchView {
         boolean added = addSectionController.addSection(selected.offeringId(), selected.sectionName());
 
         if (added) {
-            timetableText.append(selected.toString() + "\n");
-            timetableText.append(selected.meetingDetails());
-            timetableText.append("\n");
+            // The weekly grid redraws from the timetable, so it shows every meeting of the new section.
+            timetablePanel.refresh();
         } else {
             System.out.println("Already in timetable: " + selected);
         }

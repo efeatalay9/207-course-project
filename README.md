@@ -44,7 +44,7 @@ interfaces, implementation order, and coding conventions.
 ### 2. Add a section and view its meeting times (Jingyan) — Implemented
 As a student, I want to add a course section and see its scheduled meetings so I can keep track of the sections I’ve chosen.
 
-### 3. View and edit my weekly timetable (Vincent) - In Progress
+### 3. View and edit my weekly timetable (Vincent) — Implemented
 
 As a student, I want to see my selected sections on a weekly grid and
 remove sections I no longer want so I can adjust my schedule.
@@ -100,21 +100,30 @@ when they overlap so I can decide which sections to change.
 - If a meeting time is TBA, the app shows the section as selected with a
   **Time TBA** label and leaves it off the timed grid.
 
-### Review my weekly timetable
+### View my weekly timetable (Vincent)
 
 - **Primary actor:** Student.
-- **Trigger:** The student opens the weekly timetable.
+- **Precondition:** The course catalogue has loaded.
+- **Trigger:** The student opens the app, adds a section, removes a section, or picks a session.
 - **Success outcome:** Each scheduled meeting for the displayed academic session appears on the correct day and at the correct time.
 
 **Main success scenario**
 
-1. The student opens the weekly timetable.
-2. The app displays the meetings for the selected sections on the weekly grid.
+1. The student looks at the **My Timetable** panel below the search results.
+2. The app looks up every selected section and its meetings in the catalogue.
+3. The app shows the earliest session that has meetings (for example Fall 2026), and draws each
+   meeting as a block on a Monday–Friday grid, labelled with course, section, time, and room.
+4. The student picks another session from the **Session** menu, and the grid redraws for that session.
 
 **Extensions**
 
-- If there are no selected sections, the app shows an empty grid.
-- If a selected section has no knokwn meeting times, the app lists it separately as **Time TBA**
+- **Step 2 — No selected sections:** The app shows an empty grid and explains how to add a section.
+- **Step 2 — A section has no known meeting times:** The app lists it with **Time TBA** and leaves it off the grid.
+- **Step 2 — A section is no longer in the catalogue:** The app lists it as unavailable instead of hiding it.
+- **Step 2 — The catalogue cannot be read:** The app shows an error instead of a misleadingly empty grid.
+- **Step 3 — A meeting is on a weekend or outside 09:00–18:00:** The grid adds the needed columns or hours.
+- **Step 3 — Meetings overlap:** Blocks are drawn side by side so none is hidden (conflict *checking* is story 4).
+- **Step 3 — A meeting is not weekly:** Its block is labelled *alternate weeks* or *irregular dates*.
 
 ### Remove a section from my timetable
 
@@ -128,14 +137,22 @@ when they overlap so I can decide which sections to change.
 1. The student selects a section they previously added.
 2. The student chooses **Remove**.
 3. The app removes the section and refreshes the weekly grid.
+4. The app confirms, for example "Removed CSC108H1 TUT0101 from your timetable."
+
+**Extensions**
+
+- **Step 1 — The student clicks a block on the grid:** That section is selected in the list.
+- **Step 2 — Nothing is selected:** The app asks the student to choose a section first; nothing changes.
+- **Step 3 — The section is no longer selected:** The app says so and leaves the timetable unchanged.
+
 
 ## Minimum Viable Product (MVP)
 | Team member | MVP use case | Status |
 |---|---|---|
 | Matthew | Find course sections | Implemented |
-| Jingyan | Add and remove sections from the weekly timetable | In progress |
-| Vincent | View the weekly grid and remove a section | In progress |
-| Person 4| Check timetable conflicts | Planned |
+| Jingyan | Add and remove sections from the weekly timetable | Implemented |
+| Vincent | View the weekly grid and remove a section | Implemented |
+| Person 4 | Check timetable conflicts | Planned |
 (add more later)
 
 ## Entities
@@ -145,7 +162,8 @@ when they overlap so I can decide which sections to change.
 | `CourseOffering` | Offering ID, course code, title, campus, term, sections | Provides the sections for a particular offering. |
 | `Section` | Section identifier, teaching type, status, meeting times, linked sections | Provides the meeting times and links for a section. |
 | `MeetingTime` | Day, start time, end time, academic session, recurrence, location | Represents when and where a meeting takes place. |
-| `Timetable` (proposed) | Academic term and selected sections | Records section selections for a weekly plan. |
+| `Timetable` | Selected sections, keyed by offering ID and section name | Adds, removes, and lists selected sections in the order they were added. |
+| `SelectedSection` | Offering ID, section name | Identifies one chosen section; a section name is only unique within its offering. |
 
 ## API Usage
 (add notes here)
