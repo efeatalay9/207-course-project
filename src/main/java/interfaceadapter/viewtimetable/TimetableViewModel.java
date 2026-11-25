@@ -135,7 +135,21 @@ public final class TimetableViewModel {
       int startMinute,
       int endMinute,
       String title,
-      String detail) {}
+      String detail,
+      String warning) {
+    /** Creates an unflagged block for views that do not supply overlap annotations. */
+    public Block(
+        String offeringId,
+        String sectionName,
+        String courseCode,
+        int column,
+        int startMinute,
+        int endMinute,
+        String title,
+        String detail) {
+      this(offeringId, sectionName, courseCode, column, startMinute, endMinute, title, detail, "");
+    }
+  }
 
   /**
    * One selected section in the list beside the grid.

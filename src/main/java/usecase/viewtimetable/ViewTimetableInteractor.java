@@ -12,6 +12,9 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.TreeSet;
 import usecase.common.CatalogAccessException;
+import usecase.overlaps.SectionOverlapCheck;
+import usecase.overlaps.SectionOverlapChecker;
+import usecase.overlaps.SectionOverlapResult;
 import usecase.viewtimetable.ViewTimetableResponse.ScheduledMeeting;
 import usecase.viewtimetable.ViewTimetableResponse.SectionStatus;
 import usecase.viewtimetable.ViewTimetableResponse.SelectedSectionResult;
@@ -33,6 +36,7 @@ public final class ViewTimetableInteractor implements ViewTimetableInputBoundary
 
   private final Timetable timetable;
   private final OfferingLookup offerings;
+  private final SectionOverlapCheck overlapCheck;
   private final ViewTimetableOutputBoundary output;
 
   /**
@@ -44,6 +48,16 @@ public final class ViewTimetableInteractor implements ViewTimetableInputBoundary
    */
   public ViewTimetableInteractor(
       Timetable timetable, OfferingLookup offerings, ViewTimetableOutputBoundary output) {
+    this(timetable, offerings, new SectionOverlapChecker(offerings), output);
+  }
+
+  /** Allows alternate overlap policies without changing timetable projection or presentation. */
+  public ViewTimetableInteractor(
+      Timetable timetable,
+      OfferingLookup offerings,
+      SectionOverlapCheck overlapCheck,
+      ViewTimetableOutputBoundary output) {
+    this.overlapCheck = Objects.requireNonNull(overlapCheck, "overlapCheck");
     this.timetable = Objects.requireNonNull(timetable, "timetable");
     this.offerings = Objects.requireNonNull(offerings, "offerings");
     this.output = Objects.requireNonNull(output, "output");
@@ -55,10 +69,13 @@ public final class ViewTimetableInteractor implements ViewTimetableInputBoundary
     List<ScheduledMeeting> allMeetings = new ArrayList<>();
     TreeSet<String> sessions = new TreeSet<>();
 
+    List<SelectedSection> snapshot = timetable.selections();
+    List<SectionOverlapResult> overlaps;
     try {
-      for (SelectedSection selection : timetable.selections()) {
+      for (SelectedSection selection : snapshot) {
         collect(selection, sections, allMeetings, sessions);
       }
+      overlaps = overlapCheck.check(snapshot, snapshot);
     } catch (CatalogAccessException exception) {
       output.presentFailure(exception.getMessage());
       return;
@@ -74,7 +91,8 @@ public final class ViewTimetableInteractor implements ViewTimetableInputBoundary
     shown.sort(MEETING_ORDER);
 
     output.present(
-        new ViewTimetableResponse(List.copyOf(sessions), selectedSession, shown, sections));
+        new ViewTimetableResponse(
+            List.copyOf(sessions), selectedSession, shown, sections, overlaps));
   }
 
   // Looks up one selection and records its status and meetings.

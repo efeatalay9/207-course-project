@@ -1,6 +1,7 @@
 package view;
 
 import interfaceadapter.addsection.AddSectionController;
+import interfaceadapter.overlaps.CheckSectionOverlapsController;
 import interfaceadapter.searchcourses.SearchCoursesController;
 import interfaceadapter.searchcourses.SearchCoursesViewModel;
 import interfaceadapter.searchcourses.SearchCoursesViewModel.SectionChoice;
@@ -46,8 +47,9 @@ public final class SearchView {
   private final JTextArea results = new JTextArea();
   private final WeeklyTimetablePanel timetablePanel;
   private final DefaultListModel<SectionChoice> sectionChoices = new DefaultListModel<>();
-  private final JList<SectionChoice> sectionList = new JList<>(sectionChoices);
+  private final JList<SectionChoice> sectionList = new SectionChoiceList(sectionChoices);
   private boolean searching;
+  private CheckSectionOverlapsController overlaps;
 
   /**
    * Creates an offline search window on Swing's event dispatch thread.
@@ -125,6 +127,13 @@ public final class SearchView {
     } else {
       render();
     }
+  }
+
+  /** Connects optional overlap warnings after the composition root creates the search window. */
+  public void setOverlapController(CheckSectionOverlapsController overlaps) {
+    this.overlaps = overlaps;
+    timetablePanel.setOnSelectionsChanged(this::refreshOverlapWarnings);
+    refreshOverlapWarnings();
   }
 
   /** Opens the window and focuses the first control needed for a search. */
@@ -269,6 +278,7 @@ public final class SearchView {
       addSectionController.addSection(selected.offeringId(), selected.sectionName());
     }
     timetablePanel.refresh();
+    refreshOverlapWarnings();
   }
 
   private void search() {
@@ -336,6 +346,26 @@ public final class SearchView {
 
     for (SectionChoice choice : viewModel.state().sectionChoices()) {
       sectionChoices.addElement(choice);
+    }
+    refreshOverlapWarnings();
+  }
+
+  // Current adapters resolve offering IDs from local memory. No HTTP request is made here.
+  // Refresh against the latest selections after search completion, addition, or removal.
+  private void refreshOverlapWarnings() {
+    if (overlaps == null || sectionChoices.isEmpty()) {
+      return;
+    }
+    SectionChoice selected = sectionList.getSelectedValue();
+    overlaps.check(java.util.Collections.list(sectionChoices.elements()));
+    sectionChoices.clear();
+    for (SectionChoice choice : viewModel.state().sectionChoices()) {
+      sectionChoices.addElement(choice);
+      if (selected != null
+          && selected.offeringId().equals(choice.offeringId())
+          && selected.sectionName().equals(choice.sectionName())) {
+        sectionList.setSelectedValue(choice, true);
+      }
     }
   }
 

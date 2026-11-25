@@ -250,3 +250,56 @@ If an initial dependency download fails, check network access and rerun the comm
 Subsequent cached builds can use `./test.sh -o`. A Maven `sun.misc.Unsafe` warning
 can occur on JDK 25; it is emitted by Maven's dependency, not the application.
 If no desktop is available, use `--console`.
+
+## Non-blocking overlap warnings
+
+Run the small, fictional overlap fixture:
+
+```sh
+./run.sh --catalog examples/overlap-courses.json
+```
+
+1. Search `CSC108H1` and add `LEC0101` (Monday 09:00–10:00).
+2. Search `CSC148H1`. `TUT0101` (Monday 09:30–10:30) has an `[OVERLAP]`
+   label and a tinted row. Hover over it to see the existing course, section,
+   day, time, and session. `PRA0101` starts at 10:00 and is not flagged yet:
+   meetings that merely touch at an endpoint do not overlap.
+3. Add the flagged tutorial. Addition succeeds. Both overlapping grid blocks
+   have a warning colour and `[!]` label; hover over either for the explanation.
+   The practical now also conflicts with the selected tutorial.
+4. Remove the lecture by selecting its grid block or entry in My Timetable and
+   clicking Remove. Its clash with the tutorial disappears immediately in both
+   the grid and search results. Remove the tutorial to clear the practical's warning.
+
+Checks include every selected section type, including tutorials and practicals,
+using the meeting's academic session and weekday. A section does not conflict
+with itself. Irregular or unverified recurrence is labelled possible overlap;
+missing sections and unknown times make the check incomplete. These warnings
+compare individual meeting times, not the validity of an entire linked bundle.
+They never prevent adding a section, and existing cancellation checks still apply.
+
+Automated coverage includes interval boundaries, containment, sessions, days,
+self-selection, multiple component types, unknown data, catalogue errors,
+non-mutating checks, non-blocking adds, hover text, grid rendering, and removal
+refresh through the real Swing panel's Remove button.
+
+
+## Overlap change validation
+
+On November 24, 2026, the feature build passed **132 tests** with no failures or
+errors, including the compiled dependency-direction check and a substitute
+`SectionOverlapCheck` exercised through both the search warning and timetable
+interactors. A clean packaged build succeeded on JDK 25 while targeting Java 17.
+JaCoCo 0.8.12 measured **83/83 domain lines** and **295/295 use-case lines**.
+This is line coverage, not proof of every branch or all catalogue semantics.
+
+The changed Java files pass the configured Google Checkstyle 10.26.1 checks.
+Google Java Format 2.0.0 was used locally because the older formatter could not
+run on this computer's JDK 25. No project runtime or dependency version was
+changed. Formatting and public API comments were refreshed in touched files;
+the whole repository's existing style findings are a separate task.
+
+The headless Swing integration test exercises adding a conflicting tutorial,
+warning text and hover hit-testing, rendering the grid, then clicking Remove
+and verifying warnings clear. The standalone fixture above is available for
+manual desktop testing.
