@@ -5,14 +5,17 @@ import dataaccess.catalog.InMemoryCourseCatalog;
 import dataaccess.catalog.InMemoryOfferingLookup;
 import dataaccess.catalog.JsonCatalogLoader;
 import dataaccess.catalog.TtbCourseCatalog;
+import dataaccess.plan.JsonPlanFileDataAccess;
 import domain.CourseOffering;
 import domain.Timetable;
 import interfaceadapter.addsection.AddSectionController;
 import interfaceadapter.addsection.AddSectionPresenter;
-import interfaceadapter.overlaps.CheckSectionOverlapsController;
-import interfaceadapter.overlaps.CheckSectionOverlapsPresenter;
+import interfaceadapter.openplan.OpenPlanController;
+import interfaceadapter.openplan.OpenPlanPresenter;
 import interfaceadapter.removesection.RemoveSectionController;
 import interfaceadapter.removesection.RemoveSectionPresenter;
+import interfaceadapter.saveplan.SavePlanController;
+import interfaceadapter.saveplan.SavePlanPresenter;
 import interfaceadapter.searchcourses.SearchCoursesController;
 import interfaceadapter.searchcourses.SearchCoursesPresenter;
 import interfaceadapter.searchcourses.SearchCoursesViewModel;
@@ -30,18 +33,22 @@ import java.io.PrintWriter;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.time.Clock;
+import java.time.ZoneId;
 import java.util.List;
 import javax.swing.SwingUtilities;
 import usecase.addsection.AddSectionInteractor;
 import usecase.common.CatalogAccessException;
-import usecase.overlaps.CheckSectionOverlapsInteractor;
-import usecase.overlaps.SectionOverlapChecker;
+import usecase.openplan.OpenPlanInteractor;
+import usecase.plan.PlanDataAccess;
 import usecase.removesection.RemoveSectionInteractor;
+import usecase.saveplan.SavePlanInteractor;
 import usecase.searchcourses.CourseCatalog;
 import usecase.suggestcoursecodes.CourseCodeIndex;
 import usecase.viewtimetable.OfferingLookup;
 import usecase.viewtimetable.ViewTimetableInteractor;
 import view.ConsoleSearchView;
+import view.PlanMenuBar;
 import view.SearchView;
 import view.WeeklyTimetablePanel;
 
@@ -192,7 +199,6 @@ public final class Main {
     SuggestCourseCodesController suggestions =
         new SuggestCourseCodesController(application.suggestions());
     Timetable timetable = new Timetable();
-    SectionOverlapChecker overlapCheck = new SectionOverlapChecker(offeringLookup);
     TimetableViewModel timetableModel = new TimetableViewModel();
     AddSectionController add =
         new AddSectionController(
@@ -201,34 +207,40 @@ public final class Main {
     ViewTimetableController viewTimetable =
         new ViewTimetableController(
             new ViewTimetableInteractor(
-                timetable,
-                offeringLookup,
-                overlapCheck,
-                new ViewTimetablePresenter(timetableModel)));
+                timetable, offeringLookup, new ViewTimetablePresenter(timetableModel)));
     RemoveSectionController remove =
         new RemoveSectionController(
             new RemoveSectionInteractor(timetable, new RemoveSectionPresenter(timetableModel)));
-    SwingUtilities.invokeLater(() -> {
-      WeeklyTimetablePanel timetablePanel =
-          new WeeklyTimetablePanel(viewTimetable, remove, timetableModel);
-      SearchView desktopView =
-          new SearchView(
-              controller,
-              viewModel,
-              suggestions,
-              suggestionsModel,
-              source,
-              add,
-              timetablePanel,
-              filters);
-      desktopView.setOverlapController(
-          new CheckSectionOverlapsController(
-              new CheckSectionOverlapsInteractor(
-                  timetable, overlapCheck, new CheckSectionOverlapsPresenter(viewModel))));
-      desktopView.show();
-      output.println("Desktop search window opened.");
-      output.flush();
-    });
+    PlanDataAccess planFiles = new JsonPlanFileDataAccess();
+    SavePlanController savePlan =
+        new SavePlanController(
+            new SavePlanInteractor(
+                timetable, planFiles, new SavePlanPresenter(timetableModel), Clock.systemUTC()));
+    OpenPlanController openPlan =
+        new OpenPlanController(
+            new OpenPlanInteractor(
+                timetable,
+                planFiles,
+                new OpenPlanPresenter(timetableModel, ZoneId.systemDefault())));
+    SwingUtilities.invokeLater(
+        () -> {
+          WeeklyTimetablePanel timetablePanel =
+              new WeeklyTimetablePanel(viewTimetable, remove, timetableModel);
+          SearchView desktopView =
+              new SearchView(
+                  controller,
+                  viewModel,
+                  suggestions,
+                  suggestionsModel,
+                  source,
+                  add,
+                  timetablePanel,
+                  filters);
+          desktopView.show();
+          new PlanMenuBar(savePlan, openPlan, timetablePanel::refresh).attachTo(timetablePanel);
+          output.println("Desktop search window opened.");
+          output.flush();
+        });
   }
 
   // Sample data is bundled in the JAR; real data is read directly from its existing ZIP.
